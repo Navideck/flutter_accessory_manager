@@ -293,7 +293,7 @@ class FlutterAccessoryPlatformChannel {
     }
   }
 
-  Future<void> pair(String address) async {
+  Future<bool> pair(String address) async {
     final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.pair$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
@@ -310,8 +310,13 @@ class FlutterAccessoryPlatformChannel {
         message: pigeonVar_replyList[1] as String?,
         details: pigeonVar_replyList[2],
       );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
     } else {
-      return;
+      return (pigeonVar_replyList[0] as bool?)!;
     }
   }
 }

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_accessory_manager/flutter_accessory_manager.dart';
+import 'package:flutter_accessory_manager_example/global_widgets.dart';
 import 'package:flutter_accessory_manager_example/permission_handler.dart';
 
 void main() {
@@ -22,27 +23,31 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   List<BluetoothDevice> devices = [];
+  bool isScanning = false;
 
   @override
   void initState() {
-    FlutterAccessoryManager.setupCallback(
-      accessoryConnected: (EAAccessoryObject accessory) {
-        print("Accessory Connected ${accessory.name}");
-      },
-      accessoryDisconnected: (EAAccessoryObject accessory) {
-        print("Accessory Disconnected ${accessory.name}");
-      },
-      onDeviceDiscover: (device) {
-        print("Device Discover ${device.name} ${device.address}");
-        int index = devices.indexWhere((e) => e.address == device.address);
-        if (index == -1) {
-          devices.add(device);
-        } else {
-          devices[index] = device;
-        }
-        setState(() {});
-      },
-    );
+    FlutterAccessoryManager.setup();
+
+    FlutterAccessoryManager.accessoryConnected = (EAAccessoryObject accessory) {
+      print("Accessory Connected ${accessory.name}");
+    };
+
+    FlutterAccessoryManager.accessoryDisconnected =
+        (EAAccessoryObject accessory) {
+      print("Accessory Disconnected ${accessory.name}");
+    };
+
+    FlutterAccessoryManager.onDeviceDiscover = (device) {
+      print("Device Discover ${device.name} ${device.address}");
+      int index = devices.indexWhere((e) => e.address == device.address);
+      if (index == -1) {
+        devices.add(device);
+      } else {
+        devices[index] = device;
+      }
+      setState(() {});
+    };
     super.initState();
   }
 
@@ -52,33 +57,87 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  Future<void> startScan() async {
+    setState(() {
+      devices.clear();
+      isScanning = true;
+    });
+    try {
+      await FlutterAccessoryManager.startScan();
+    } catch (e) {
+      print(e);
+
+      setState(() {
+        isScanning = false;
+      });
+    }
+  }
+
+  Future<void> stopScan() async {
+    setState(() {
+      isScanning = false;
+    });
+    try {
+      await FlutterAccessoryManager.stopScan();
+    } catch (e) {
+      print(e);
+      setState(() {
+        isScanning = true;
+      });
+    }
+  }
+
+  Future<void> getPairedDevices() async {
+    try {
+      var devices = await FlutterAccessoryManager.getPairedDevices();
+      print(devices.map((e) => "${e.address} ${e.name}"));
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  Future<void> onDeviceSelect(BluetoothDevice device) async {
+    try {
+      await stopScan();
+      print("Pairing");
+      bool paired = await FlutterAccessoryManager.pair(device.address);
+      print("Pair: $paired");
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('FlutterAccessoryManager'),
+        actions: [
+          if (isScanning)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator.adaptive(),
+            ),
+        ],
       ),
       body: Column(
         children: [
-          const Text("IOS"),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await FlutterAccessoryManager.showBluetoothAccessoryPicker();
-                print("showBluetoothAccessoryPicker");
-              } catch (e) {
-                print(e);
-              }
-            },
-            child: const Text("ShowBluetoothAccessoryPicker"),
-          ),
-          const Divider(),
-          const Text("Android/MacOs"),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          ResponsiveButtonsGrid(
             children: [
-              ElevatedButton(
-                child: const Text("Check Permissions"),
+              PlatformButton(
+                onPressed: () async {
+                  try {
+                    await FlutterAccessoryManager
+                        .showBluetoothAccessoryPicker();
+                    print("showBluetoothAccessoryPicker");
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+                text: "ShowBluetoothAccessoryPicker",
+              ),
+              PlatformButton(
+                text: "Check Permissions",
                 onPressed: () async {
                   bool hasPermissions =
                       await PermissionHandler.arePermissionsGranted();
@@ -87,43 +146,42 @@ class _MyAppState extends State<MyApp> {
                   }
                 },
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await FlutterAccessoryManager.startScan();
-                  } catch (e) {
-                    print(e);
-                  }
-                },
-                child: const Text("Start Scan"),
+              PlatformButton(
+                onPressed: startScan,
+                text: "Start Scan",
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await FlutterAccessoryManager.stopScan();
-                  } catch (e) {
-                    print(e);
-                  }
-                },
-                child: const Text("Stop Scan"),
+              PlatformButton(
+                onPressed: stopScan,
+                text: "Stop Scan",
               ),
-              ElevatedButton(
+              PlatformButton(
                 onPressed: () async {
                   try {
-                    var devices =
-                        await FlutterAccessoryManager.getPairedDevices();
+                    devices.clear();
+                    devices.addAll(
+                      await FlutterAccessoryManager.getPairedDevices(),
+                    );
                     print(devices.map((e) => "${e.address} ${e.name}"));
+                    setState(() {});
                   } catch (e) {
                     print(e);
                   }
                 },
-                child: const Text("Get Paired"),
+                text: "Get Paired",
+              ),
+              PlatformButton(
+                onPressed: () {
+                  setState(() {
+                    devices.clear();
+                  });
+                },
+                text: "Clear List",
               ),
             ],
           ),
           const Divider(),
           Expanded(
-            child: ListView.builder(
+            child: ListView.separated(
               itemCount: devices.length,
               itemBuilder: (BuildContext context, int index) {
                 BluetoothDevice device = devices[index];
@@ -131,16 +189,11 @@ class _MyAppState extends State<MyApp> {
                   title: Text(device.name ?? "N/A"),
                   subtitle: Text(device.address),
                   trailing: Text(device.rssi.toString()),
-                  onTap: () async {
-                    try {
-                      print("Pairing");
-                      await FlutterAccessoryManager.pair(device.address);
-                      print("Pairing called");
-                    } catch (e) {
-                      print(e);
-                    }
-                  },
+                  onTap: () => onDeviceSelect(device),
                 );
+              },
+              separatorBuilder: (BuildContext context, int index) {
+                return const Divider();
               },
             ),
           )

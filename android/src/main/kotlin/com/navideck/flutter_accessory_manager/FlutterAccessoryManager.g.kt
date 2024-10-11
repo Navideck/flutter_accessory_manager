@@ -161,7 +161,7 @@ interface FlutterAccessoryPlatformChannel {
   fun stopScan()
   fun isScanning(): Boolean
   fun getPairedDevices(): List<BluetoothDevice>
-  fun pair(address: String)
+  fun pair(address: String, callback: (Result<Boolean>) -> Unit)
 
   companion object {
     /** The codec used by FlutterAccessoryPlatformChannel. */
@@ -257,13 +257,15 @@ interface FlutterAccessoryPlatformChannel {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val addressArg = args[0] as String
-            val wrapped: List<Any?> = try {
-              api.pair(addressArg)
-              listOf(null)
-            } catch (exception: Throwable) {
-              wrapError(exception)
+            api.pair(addressArg) { result: Result<Boolean> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(wrapResult(data))
+              }
             }
-            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)

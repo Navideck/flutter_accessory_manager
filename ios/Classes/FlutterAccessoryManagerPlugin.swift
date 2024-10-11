@@ -46,6 +46,10 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
   func getPairedDevices() throws -> [BluetoothDevice] {
     throw PigeonError(code: "NotSupported", message: nil, details: nil)
   }
+    
+  func pair(address: String, completion: @escaping (Result<Bool, any Error>) -> Void) {
+      completion(.failure(PigeonError(code: "NotSupported", message: nil, details: nil)))
+  }
 
   @objc private func accessoryConnected(notification: NSNotification) {
     let connectedAccessory = notification.userInfo![EAAccessoryKey] as? EAAccessory

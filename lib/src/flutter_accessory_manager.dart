@@ -3,15 +3,22 @@ import 'package:flutter_accessory_manager/src/flutter_accessory_manager.g.dart';
 class FlutterAccessoryManager {
   static final _channel = FlutterAccessoryPlatformChannel();
 
-  static void setupCallback({
-    required Function(EAAccessoryObject accessory) accessoryConnected,
-    required Function(EAAccessoryObject accessory) accessoryDisconnected,
-    required Function(BluetoothDevice device) onDeviceDiscover,
-  }) {
+  static Function(EAAccessoryObject accessory)? accessoryConnected;
+  static Function(EAAccessoryObject accessory)? accessoryDisconnected;
+  static Function(BluetoothDevice device)? onDeviceDiscover;
+
+  /// Make sure to call setup once
+  static void setup() {
     FlutterAccessoryCallbackChannel.setUp(_CallbackHandler(
-      accessoryConnectedCall: accessoryConnected,
-      accessoryDisconnectedCall: accessoryDisconnected,
-      deviceDiscover: onDeviceDiscover,
+      accessoryConnectedCall: (EAAccessoryObject accessory) {
+        accessoryConnected?.call(accessory);
+      },
+      accessoryDisconnectedCall: (EAAccessoryObject accessory) {
+        accessoryDisconnected?.call(accessory);
+      },
+      deviceDiscover: (BluetoothDevice device) {
+        onDeviceDiscover?.call(device);
+      },
     ));
   }
 
@@ -22,7 +29,7 @@ class FlutterAccessoryManager {
 
   static Future<void> stopScan() => _channel.stopScan();
 
-  static Future<void> pair(String address) => _channel.pair(address);
+  static Future<bool> pair(String address) => _channel.pair(address);
 
   static Future<List<BluetoothDevice>> getPairedDevices() =>
       _channel.getPairedDevices();
