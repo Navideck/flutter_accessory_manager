@@ -2,22 +2,20 @@ import ExternalAccessory
 import Flutter
 import UIKit
 
-public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
-  public static func register(with registrar: FlutterPluginRegistrar) {
-    var messenger: FlutterBinaryMessenger = registrar.messenger()
-    let callbackChannel = FlutterAccessoryCallbackChannel(binaryMessenger: messenger)
-    let api = FlutterAccessoryManagerHandler(callbackChannel: callbackChannel)
-    FlutterAccessoryPlatformChannelSetup.setUp(binaryMessenger: messenger, api: api)
-  }
-}
-
-private class FlutterAccessoryManagerHandler: NSObject, FlutterAccessoryPlatformChannel {
+public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAccessoryPlatformChannel {
   var callbackChannel: FlutterAccessoryCallbackChannel
   var _manager = EAAccessoryManager.shared()
 
   init(callbackChannel: FlutterAccessoryCallbackChannel) {
     self.callbackChannel = callbackChannel
     super.init()
+  }
+
+  public static func register(with registrar: FlutterPluginRegistrar) {
+    var messenger: FlutterBinaryMessenger = registrar.messenger()
+    let callbackChannel = FlutterAccessoryCallbackChannel(binaryMessenger: messenger)
+    let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel)
+    FlutterAccessoryPlatformChannelSetup.setUp(binaryMessenger: messenger, api: instance)
   }
 
   func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, any Error>) -> Void) {
