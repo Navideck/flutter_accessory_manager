@@ -21,6 +21,11 @@ class FlutterAccessoryManager {
   static Future<void> startScan() => _channel.startScan();
 
   static Future<void> stopScan() => _channel.stopScan();
+
+  static Future<void> pair(String address) => _channel.pair(address);
+
+  static Future<List<BluetoothDevice>> getPairedDevices() =>
+      _channel.getPairedDevices();
 }
 
 class _CallbackHandler extends FlutterAccessoryCallbackChannel {

@@ -73,7 +73,7 @@ class _MyAppState extends State<MyApp> {
             child: const Text("ShowBluetoothAccessoryPicker"),
           ),
           const Divider(),
-          const Text("Android"),
+          const Text("Android/MacOs"),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -107,6 +107,18 @@ class _MyAppState extends State<MyApp> {
                 },
                 child: const Text("Stop Scan"),
               ),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    var devices =
+                        await FlutterAccessoryManager.getPairedDevices();
+                    print(devices.map((e) => "${e.address} ${e.name}"));
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+                child: const Text("Get Paired"),
+              ),
             ],
           ),
           const Divider(),
@@ -114,10 +126,20 @@ class _MyAppState extends State<MyApp> {
             child: ListView.builder(
               itemCount: devices.length,
               itemBuilder: (BuildContext context, int index) {
+                BluetoothDevice device = devices[index];
                 return ListTile(
-                  title: Text(devices[index].name ?? "N/A"),
-                  subtitle: Text(devices[index].address),
-                  trailing: Text(devices[index].rssi.toString()),
+                  title: Text(device.name ?? "N/A"),
+                  subtitle: Text(device.address),
+                  trailing: Text(device.rssi.toString()),
+                  onTap: () async {
+                    try {
+                      print("Pairing");
+                      await FlutterAccessoryManager.pair(device.address);
+                      print("Pairing called");
+                    } catch (e) {
+                      print(e);
+                    }
+                  },
                 );
               },
             ),

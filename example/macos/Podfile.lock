@@ -1,19 +1,25 @@
 PODS:
+  - device_info_plus (0.0.1):
+    - FlutterMacOS
   - flutter_accessory_manager (0.0.1):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
 
 DEPENDENCIES:
+  - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
   - flutter_accessory_manager (from `Flutter/ephemeral/.symlinks/plugins/flutter_accessory_manager/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
 
 EXTERNAL SOURCES:
+  device_info_plus:
+    :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
   flutter_accessory_manager:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_accessory_manager/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
 
 SPEC CHECKSUMS:
+  device_info_plus: 5401765fde0b8d062a2f8eb65510fb17e77cf07f
   flutter_accessory_manager: bcb068ab6fed5404ab84ad6f7068b2a66eb2cb02
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
 

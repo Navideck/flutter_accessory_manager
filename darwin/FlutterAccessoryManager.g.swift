@@ -209,6 +209,7 @@ protocol FlutterAccessoryPlatformChannel {
   func stopScan() throws
   func isScanning() throws -> Bool
   func getPairedDevices() throws -> [BluetoothDevice]
+  func pair(address: String) throws
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -283,6 +284,21 @@ class FlutterAccessoryPlatformChannelSetup {
       }
     } else {
       getPairedDevicesChannel.setMessageHandler(nil)
+    }
+    let pairChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.pair\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      pairChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let addressArg = args[0] as! String
+        do {
+          try api.pair(address: addressArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      pairChannel.setMessageHandler(nil)
     }
   }
 }

@@ -2,14 +2,13 @@ import Cocoa
 import FlutterMacOS
 import IOBluetooth
 
-public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAccessoryPlatformChannel {
+public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {   
     var callbackChannel: FlutterAccessoryCallbackChannel
     
-    var target = "Z_30_6012062" // target must be "MAC Address" or "Device Name"
-    var inquiry: IOBluetoothDeviceInquiry?
+    lazy var inquiry: IOBluetoothDeviceInquiry = IOBluetoothDeviceInquiry(delegate: self)
     var devicePair: IOBluetoothDevicePair?
-    
-    var completion: ((Result<Void, Error>) -> Void)?
+    private var isInquiryStarted = false
+    var devices = [String: IOBluetoothDevice]()
 
     init(callbackChannel: FlutterAccessoryCallbackChannel) {
         self.callbackChannel = callbackChannel
@@ -22,41 +21,64 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
         let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel)
         FlutterAccessoryPlatformChannelSetup.setUp(binaryMessenger: messenger, api: instance)
     }
+}
 
-    func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void) {
-        self.completion = completion
-        
-        startInquiry()
+extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
+    func pair(address: String) throws {
+        if let device = devices[address] {
+            print("Initiating pairing process")
+              if !self.pairWithDevice(device) {
+                  throw PigeonError(code: "Failed", message: "Pairing failed", details: nil)
+              }
+        } else {
+            throw PigeonError(code: "Not found", message: "Please start scan first", details: nil)
+        }
     }
     
-    private func startInquiry() {
-        self.inquiry = IOBluetoothDeviceInquiry(delegate: self)
-        self.inquiry?.updateNewDeviceNames = true
-        self.inquiry?.inquiryLength = 3
-        self.inquiry?.start()
+    func startScan() throws {
+        self.inquiry.updateNewDeviceNames = true
+        self.inquiry.inquiryLength = 3
+        self.inquiry.start()
+    }
+    
+    func stopScan() throws {
+        self.inquiry.stop()
+    }
+    
+    func isScanning() throws -> Bool {
+        return isInquiryStarted
+    }
+    
+    func getPairedDevices() throws -> [BluetoothDevice] {
+        return inquiry.foundDevices().filter{($0 as! IOBluetoothDevice).isPaired()}.map{($0 as! IOBluetoothDevice).toBLuetoothDevice()}
+    }
+    
+    func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void) {
+        completion(.failure(PigeonError(code: "Not Implemented", message: nil, details: nil)))
+    }
+}
+
+extension IOBluetoothDevice {
+    func toBLuetoothDevice() -> BluetoothDevice {
+        return BluetoothDevice(
+            address: self.addressString,
+            name: self.name,
+            paired: self.isPaired(),
+            rssi: Int64(self.rssi())
+        )
     }
 }
 
 
 extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
+    
+    @objc public func deviceInquiryStarted(_ sender: IOBluetoothDeviceInquiry!) {
+        isInquiryStarted = true
+    }
+    
     @objc public func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!) {
-        let address = device.getAddress()
-        let addressStr = self.btDeviceAddressToString(address: address!.pointee)
-        let name = device.name ?? "Unknown"
-        print("Device found: address = \(addressStr), name = \(name)")
-
-        if self.target.uppercased() == addressStr || self.target == name {
-            print("Target device found")
-            self.inquiry?.stop()
-
-            if device.isPaired() {
-                print("Device is already paired")
-                self.connectToDevice(device)
-            } else {
-                print("Initiating pairing process")
-                self.pairWithDevice(device)
-            }
-        }
+        callbackChannel.onDeviceDiscover(device: device.toBLuetoothDevice()) { _ in }
+        devices[device.addressString] = device
     }
 
     @objc public func deviceInquiryUpdatingDeviceNamesStarted(_ sender: IOBluetoothDeviceInquiry!, devicesRemaining: UInt32) {
@@ -68,37 +90,34 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
     }
 
     @objc public func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
+        isInquiryStarted = false
         print("Device inquiry completed")
         if error != kIOReturnSuccess {
             print("Inquiry failed with error: \(error)")
-            exit(1)
         }
     }
     
-    private func connectToDevice(_ device: IOBluetoothDevice) {
-        if device.isConnected() {
-            print("Device is already connected")
-            exit(0)
-        }
-
-        let ret = device.openConnection()
-        if ret != kIOReturnSuccess {
-            print("Failed to connect to device")
-            exit(1)
-        } else {
-            print("Successfully connected to device")
-            exit(0)
-        }
-    }
+//    private func connectToDevice(_ device: IOBluetoothDevice) {
+//        if device.isConnected() {
+//            print("Device is already connected")
+//            exit(0)
+//        }
+//
+//        let ret = device.openConnection()
+//        if ret != kIOReturnSuccess {
+//            print("Failed to connect to device")
+//            exit(1)
+//        } else {
+//            print("Successfully connected to device")
+//            exit(0)
+//        }
+//    }
     
-    private func pairWithDevice(_ device: IOBluetoothDevice) {
+    private func pairWithDevice(_ device: IOBluetoothDevice) -> Bool {
         self.devicePair = IOBluetoothDevicePair(device: device)
         self.devicePair?.delegate = self
         let result = self.devicePair?.start()
-        if result != kIOReturnSuccess {
-            print("Failed to start pairing process")
-            exit(1)
-        }
+        return result == kIOReturnSuccess
     }
 
     private func btDeviceAddressToString(address: BluetoothDeviceAddress) -> String {
@@ -118,10 +137,8 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDevicePairDelegate {
     @objc public func devicePairingFinished(_ sender: Any!, error: IOReturn) {
         if error == kIOReturnSuccess {
             print("Pairing successful")
-            self.connectToDevice((sender as AnyObject).device())
         } else {
             print("Pairing failed with error: \(error)")
-            exit(1)
         }
     }
 }

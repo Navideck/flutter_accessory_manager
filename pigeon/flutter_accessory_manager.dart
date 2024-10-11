@@ -33,6 +33,8 @@ abstract class FlutterAccessoryPlatformChannel {
   bool isScanning();
 
   List<BluetoothDevice> getPairedDevices();
+
+  void pair(String address);
 }
 
 /// Native -> Flutter

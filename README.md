@@ -1,3 +1,5 @@
+- Add plist BT property
+
 # flutter_accessory_manager
 
 A new Flutter plugin project.
