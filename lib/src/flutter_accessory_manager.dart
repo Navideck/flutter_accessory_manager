@@ -6,10 +6,12 @@ class FlutterAccessoryManager {
   static void setupCallback({
     required Function(EAAccessoryObject accessory) accessoryConnected,
     required Function(EAAccessoryObject accessory) accessoryDisconnected,
+    required Function(BluetoothDevice device) onDeviceDiscover,
   }) {
     FlutterAccessoryCallbackChannel.setUp(_CallbackHandler(
       accessoryConnectedCall: accessoryConnected,
       accessoryDisconnectedCall: accessoryDisconnected,
+      deviceDiscover: onDeviceDiscover,
     ));
   }
 
@@ -20,9 +22,12 @@ class FlutterAccessoryManager {
 class _CallbackHandler extends FlutterAccessoryCallbackChannel {
   final Function(EAAccessoryObject accessory) accessoryConnectedCall;
   final Function(EAAccessoryObject accessory) accessoryDisconnectedCall;
+  final Function(BluetoothDevice device) deviceDiscover;
+
   _CallbackHandler({
     required this.accessoryConnectedCall,
     required this.accessoryDisconnectedCall,
+    required this.deviceDiscover,
   });
 
   @override
@@ -33,5 +38,10 @@ class _CallbackHandler extends FlutterAccessoryCallbackChannel {
   @override
   void accessoryDisconnected(EAAccessoryObject accessory) {
     accessoryDisconnectedCall(accessory);
+  }
+
+  @override
+  void onDeviceDiscover(BluetoothDevice device) {
+    deviceDiscover(device);
   }
 }

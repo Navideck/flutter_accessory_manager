@@ -48,6 +48,33 @@ class FlutterError (
 ) : Throwable()
 
 /** Generated class from Pigeon that represents data sent in messages. */
+data class BluetoothDevice (
+  val address: String,
+  val name: String? = null,
+  val paired: Boolean,
+  val rssi: Long
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BluetoothDevice {
+      val address = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String?
+      val paired = pigeonVar_list[2] as Boolean
+      val rssi = pigeonVar_list[3] as Long
+      return BluetoothDevice(address, name, paired, rssi)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      address,
+      name,
+      paired,
+      rssi,
+    )
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
 data class EAAccessoryObject (
   val isConnected: Boolean,
   val connectionID: Long,
@@ -96,6 +123,11 @@ private open class FlutterAccessoryManagerPigeonCodec : StandardMessageCodec() {
     return when (type) {
       129.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
+          BluetoothDevice.fromList(it)
+        }
+      }
+      130.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
           EAAccessoryObject.fromList(it)
         }
       }
@@ -104,8 +136,12 @@ private open class FlutterAccessoryManagerPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is EAAccessoryObject -> {
+      is BluetoothDevice -> {
         stream.write(129)
+        writeValue(stream, value.toList())
+      }
+      is EAAccessoryObject -> {
+        stream.write(130)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -121,6 +157,10 @@ private open class FlutterAccessoryManagerPigeonCodec : StandardMessageCodec() {
  */
 interface FlutterAccessoryPlatformChannel {
   fun showBluetoothAccessoryPicker(callback: (Result<Unit>) -> Unit)
+  fun startScan()
+  fun stopScan()
+  fun isScanning(): Boolean
+  fun getPairedDevices(): List<BluetoothDevice>
 
   companion object {
     /** The codec used by FlutterAccessoryPlatformChannel. */
@@ -143,6 +183,68 @@ interface FlutterAccessoryPlatformChannel {
                 reply.reply(wrapResult(null))
               }
             }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.startScan$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.startScan()
+              listOf(null)
+            } catch (exception: Throwable) {
+              wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.stopScan$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.stopScan()
+              listOf(null)
+            } catch (exception: Throwable) {
+              wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.isScanning$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.isScanning())
+            } catch (exception: Throwable) {
+              wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.getPairedDevices$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              listOf(api.getPairedDevices())
+            } catch (exception: Throwable) {
+              wrapError(exception)
+            }
+            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)
@@ -186,6 +288,23 @@ class FlutterAccessoryCallbackChannel(private val binaryMessenger: BinaryMesseng
     val channelName = "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.accessoryDisconnected$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(listOf(accessoryArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(createConnectionError(channelName)))
+      } 
+    }
+  }
+  fun onDeviceDiscover(deviceArg: BluetoothDevice, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceDiscover$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(deviceArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))

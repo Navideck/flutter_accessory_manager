@@ -25,6 +25,42 @@ List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty
   return <Object?>[error.code, error.message, error.details];
 }
 
+class BluetoothDevice {
+  BluetoothDevice({
+    required this.address,
+    this.name,
+    required this.paired,
+    required this.rssi,
+  });
+
+  String address;
+
+  String? name;
+
+  bool paired;
+
+  int rssi;
+
+  Object encode() {
+    return <Object?>[
+      address,
+      name,
+      paired,
+      rssi,
+    ];
+  }
+
+  static BluetoothDevice decode(Object result) {
+    result as List<Object?>;
+    return BluetoothDevice(
+      address: result[0]! as String,
+      name: result[1] as String?,
+      paired: result[2]! as bool,
+      rssi: result[3]! as int,
+    );
+  }
+}
+
 class EAAccessoryObject {
   EAAccessoryObject({
     required this.isConnected,
@@ -99,8 +135,11 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is EAAccessoryObject) {
+    }    else if (value is BluetoothDevice) {
       buffer.putUint8(129);
+      writeValue(buffer, value.encode());
+    }    else if (value is EAAccessoryObject) {
+      buffer.putUint8(130);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -111,6 +150,8 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129: 
+        return BluetoothDevice.decode(readValue(buffer)!);
+      case 130: 
         return EAAccessoryObject.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -153,6 +194,104 @@ class FlutterAccessoryPlatformChannel {
       return;
     }
   }
+
+  Future<void> startScan() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.startScan$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(null) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> stopScan() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.stopScan$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(null) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<bool> isScanning() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.isScanning$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(null) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as bool?)!;
+    }
+  }
+
+  Future<List<BluetoothDevice>> getPairedDevices() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.getPairedDevices$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(null) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else if (pigeonVar_replyList[0] == null) {
+      throw PlatformException(
+        code: 'null-error',
+        message: 'Host platform returned null value for non-null return value.',
+      );
+    } else {
+      return (pigeonVar_replyList[0] as List<Object?>?)!.cast<BluetoothDevice>();
+    }
+  }
 }
 
 /// Native -> Flutter
@@ -162,6 +301,8 @@ abstract class FlutterAccessoryCallbackChannel {
   void accessoryConnected(EAAccessoryObject accessory);
 
   void accessoryDisconnected(EAAccessoryObject accessory);
+
+  void onDeviceDiscover(BluetoothDevice device);
 
   static void setUp(FlutterAccessoryCallbackChannel? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
@@ -206,6 +347,31 @@ abstract class FlutterAccessoryCallbackChannel {
               'Argument for dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.accessoryDisconnected was null, expected non-null EAAccessoryObject.');
           try {
             api.accessoryDisconnected(arg_accessory!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceDiscover$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceDiscover was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final BluetoothDevice? arg_device = (args[0] as BluetoothDevice?);
+          assert(arg_device != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceDiscover was null, expected non-null BluetoothDevice.');
+          try {
+            api.onDeviceDiscover(arg_device!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

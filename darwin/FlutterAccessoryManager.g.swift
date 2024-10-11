@@ -69,6 +69,39 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
+struct BluetoothDevice {
+  var address: String
+  var name: String? = nil
+  var paired: Bool
+  var rssi: Int64
+
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BluetoothDevice? {
+    let address = pigeonVar_list[0] as! String
+    let name: String? = nilOrValue(pigeonVar_list[1])
+    let paired = pigeonVar_list[2] as! Bool
+    let rssi = pigeonVar_list[3] as! Int64
+
+    return BluetoothDevice(
+      address: address,
+      name: name,
+      paired: paired,
+      rssi: rssi
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      address,
+      name,
+      paired,
+      rssi,
+    ]
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
 struct EAAccessoryObject {
   var isConnected: Bool
   var connectionID: Int64
@@ -129,6 +162,8 @@ private class FlutterAccessoryManagerPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
+      return BluetoothDevice.fromList(self.readValue() as! [Any?])
+    case 130:
       return EAAccessoryObject.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -138,8 +173,11 @@ private class FlutterAccessoryManagerPigeonCodecReader: FlutterStandardReader {
 
 private class FlutterAccessoryManagerPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? EAAccessoryObject {
+    if let value = value as? BluetoothDevice {
       super.writeByte(129)
+      super.writeValue(value.toList())
+    } else if let value = value as? EAAccessoryObject {
+      super.writeByte(130)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -167,6 +205,10 @@ class FlutterAccessoryManagerPigeonCodec: FlutterStandardMessageCodec, @unchecke
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol FlutterAccessoryPlatformChannel {
   func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void)
+  func startScan() throws
+  func stopScan() throws
+  func isScanning() throws -> Bool
+  func getPairedDevices() throws -> [BluetoothDevice]
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -190,6 +232,58 @@ class FlutterAccessoryPlatformChannelSetup {
     } else {
       showBluetoothAccessoryPickerChannel.setMessageHandler(nil)
     }
+    let startScanChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.startScan\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      startScanChannel.setMessageHandler { _, reply in
+        do {
+          try api.startScan()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      startScanChannel.setMessageHandler(nil)
+    }
+    let stopScanChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.stopScan\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      stopScanChannel.setMessageHandler { _, reply in
+        do {
+          try api.stopScan()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      stopScanChannel.setMessageHandler(nil)
+    }
+    let isScanningChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.isScanning\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      isScanningChannel.setMessageHandler { _, reply in
+        do {
+          let result = try api.isScanning()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      isScanningChannel.setMessageHandler(nil)
+    }
+    let getPairedDevicesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.getPairedDevices\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getPairedDevicesChannel.setMessageHandler { _, reply in
+        do {
+          let result = try api.getPairedDevices()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      getPairedDevicesChannel.setMessageHandler(nil)
+    }
   }
 }
 /// Native -> Flutter
@@ -198,6 +292,7 @@ class FlutterAccessoryPlatformChannelSetup {
 protocol FlutterAccessoryCallbackChannelProtocol {
   func accessoryConnected(accessory accessoryArg: EAAccessoryObject, completion: @escaping (Result<Void, PigeonError>) -> Void)
   func accessoryDisconnected(accessory accessoryArg: EAAccessoryObject, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onDeviceDiscover(device deviceArg: BluetoothDevice, completion: @escaping (Result<Void, PigeonError>) -> Void)
 }
 class FlutterAccessoryCallbackChannel: FlutterAccessoryCallbackChannelProtocol {
   private let binaryMessenger: FlutterBinaryMessenger
@@ -231,6 +326,24 @@ class FlutterAccessoryCallbackChannel: FlutterAccessoryCallbackChannelProtocol {
     let channelName: String = "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.accessoryDisconnected\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
     channel.sendMessage([accessoryArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(Void()))
+      }
+    }
+  }
+  func onDeviceDiscover(device deviceArg: BluetoothDevice, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceDiscover\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([deviceArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return

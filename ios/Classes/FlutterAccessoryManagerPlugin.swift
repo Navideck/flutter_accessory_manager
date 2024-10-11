@@ -31,6 +31,22 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
     })
   }
 
+  func startScan() throws {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
+  }
+
+  func stopScan() throws {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
+  }
+
+  func isScanning() throws -> Bool {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
+  }
+
+  func getPairedDevices() throws -> [BluetoothDevice] {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
+  }
+
   @objc private func accessoryConnected(notification: NSNotification) {
     let connectedAccessory = notification.userInfo![EAAccessoryKey] as? EAAccessory
     print("Accessory Connected")

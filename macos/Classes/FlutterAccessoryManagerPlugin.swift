@@ -16,7 +16,23 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
     FlutterAccessoryPlatformChannelSetup.setUp(binaryMessenger: messenger, api: instance)
   }
 
-  func showBluetoothAccessoryPicker(completion _: @escaping (Result<Void, any Error>) -> Void) {
-    // Show accessory picker
+  func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, any Error>) -> Void) {
+    completion(.failure(PigeonError(code: "NotSupported", message: nil, details: nil)))
+  }
+
+  func startScan() throws {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
+  }
+
+  func stopScan() throws {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
+  }
+
+  func isScanning() throws -> Bool {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
+  }
+
+  func getPairedDevices() throws -> [BluetoothDevice] {
+    throw PigeonError(code: "NotSupported", message: nil, details: nil)
   }
 }
