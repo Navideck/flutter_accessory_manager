@@ -12,7 +12,10 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+
+private const val TAG = "FlutterAccessoryManagerPlugin"
 
 @SuppressLint("MissingPermission")
 class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPlugin {
@@ -43,23 +46,42 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
         binding.applicationContext.unregisterReceiver(broadcastReceiver)
     }
 
-    override fun showBluetoothAccessoryPicker(callback: (kotlin.Result<Unit>) -> Unit) {
-        // Not available on this platform
+    override fun showBluetoothAccessoryPicker(callback: (Result<Unit>) -> Unit) {
+        callback(Result.failure(FlutterError("NotImplemented", "Not implemented on this platform")))
     }
 
     override fun startScan() {
-        if (bluetoothAdapter?.isDiscovering == false) {
-            if (bluetoothAdapter?.startDiscovery() != true) {
-                throw FlutterError("failed", "Failed to start discovery")
-            }
+        val adapter = bluetoothAdapter ?: return
+
+        if (!adapter.isEnabled) {
+            throw FlutterError("AdapterDisabled", "Bluetooth Adapter is disabled")
         }
+
+        if (adapter.isDiscovering) {
+            Log.d(TAG, "Already Discovering")
+            return
+        }
+
+        if (!adapter.startDiscovery()) {
+            throw FlutterError("failed", "Failed to start discovery")
+        }
+
     }
 
     override fun stopScan() {
-        if (bluetoothAdapter?.isDiscovering == true) {
-            if (bluetoothAdapter?.cancelDiscovery() != true) {
-                throw FlutterError("failed", "Failed to stop discovery")
-            }
+        val adapter = bluetoothAdapter ?: return
+
+        if (!adapter.isEnabled) {
+            throw FlutterError("AdapterDisabled", "Bluetooth Adapter is disabled")
+        }
+
+        if (!adapter.isDiscovering) {
+            Log.d(TAG, "Already not discovering")
+            return
+        }
+
+        if (!adapter.cancelDiscovery()) {
+            throw FlutterError("failed", "Failed to cancel discovery")
         }
     }
 

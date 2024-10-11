@@ -90,8 +90,7 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(
                 onPressed: () async {
                   try {
-                    await FlutterAccessoryManager
-                        .showBluetoothAccessoryPicker();
+                    await FlutterAccessoryManager.startScan();
                   } catch (e) {
                     print(e);
                   }
@@ -101,8 +100,7 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(
                 onPressed: () async {
                   try {
-                    await FlutterAccessoryManager
-                        .showBluetoothAccessoryPicker();
+                    await FlutterAccessoryManager.stopScan();
                   } catch (e) {
                     print(e);
                   }

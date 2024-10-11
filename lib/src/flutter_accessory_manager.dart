@@ -17,6 +17,10 @@ class FlutterAccessoryManager {
 
   static Future<void> showBluetoothAccessoryPicker() =>
       _channel.showBluetoothAccessoryPicker();
+
+  static Future<void> startScan() => _channel.startScan();
+
+  static Future<void> stopScan() => _channel.stopScan();
 }
 
 class _CallbackHandler extends FlutterAccessoryCallbackChannel {
