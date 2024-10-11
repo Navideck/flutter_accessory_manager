@@ -1,16 +1,21 @@
 import 'package:pigeon/pigeon.dart';
 
 // dart run pigeon --input pigeon/flutter_accessory_manager.dart
-// To crete symlinks
-// ln -s "darwin/FlutterAccessoryManager.g.swift" "macos/Classes/FlutterAccessoryManager.g.swift"
-// ln -s "darwin/FlutterAccessoryManager.g.swift" "ios/Classes/FlutterAccessoryManager.g.swift"
+// To create Macos/Ios symlinks,
+// Navigate to directories, eg: cd macos/Classes, and run
+// ln -s ../../darwin/FlutterAccessoryManager.g.swift FlutterAccessoryManager.g.swift
+// ln -s ../../darwin/FlutterAccessoryManager.g.swift FlutterAccessoryManager.g.swift
 @ConfigurePigeon(
   PigeonOptions(
     dartPackageName: 'flutter_accessory_manager',
     dartOut: 'lib/src/flutter_accessory_manager.g.dart',
     dartOptions: DartOptions(),
+    kotlinOut:
+        'android/src/main/kotlin/com/navideck/flutter_accessory_manager/FlutterAccessoryManager.g.kt',
     swiftOut: 'darwin/FlutterAccessoryManager.g.swift',
     swiftOptions: SwiftOptions(),
+    kotlinOptions:
+        KotlinOptions(package: 'com.navideck.flutter_accessory_manager'),
     debugGenerators: true,
   ),
 )

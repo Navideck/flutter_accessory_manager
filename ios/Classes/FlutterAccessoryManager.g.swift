@@ -1,0 +1,1 @@
+../../darwin/FlutterAccessoryManager.g.swift
