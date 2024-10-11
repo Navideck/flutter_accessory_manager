@@ -21,5 +21,10 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
+      android:
+        package: com.navideck.flutter_accessory_manager
+        pluginClass: FlutterAccessoryManagerPlugin
       ios:
+        pluginClass: FlutterAccessoryManagerPlugin
+      macos:
         pluginClass: FlutterAccessoryManagerPlugin
