@@ -10,6 +10,10 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     private var isInquiryStarted = false
     var devices = [String: IOBluetoothDevice]()
     var pairingFuture = [String: (Result<Bool, any Error>) -> Void]()
+    
+    // We initialize IOBluetoothPairingController in ObjC because in Swift no modal is shown
+    // This also does not work on native apps
+    lazy private var pairingController = IOBluetoothPairingControllerObjC()
 
     init(callbackChannel: FlutterAccessoryCallbackChannel) {
         self.callbackChannel = callbackChannel
@@ -44,7 +48,8 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
     }
 
     func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void) {
-        completion(.failure(PigeonError(code: "Not Implemented", message: nil, details: nil)))
+        pairingController.runModal()
+        completion(.success(()))
     }
 
     func pair(address: String, completion: @escaping (Result<Bool, any Error>) -> Void) {
