@@ -26,6 +26,9 @@ abstract class FlutterAccessoryPlatformChannel {
   @async
   void showBluetoothAccessoryPicker();
 
+  @async
+  void closeEaSession(String protocolString);
+
   void startScan();
 
   void stopScan();

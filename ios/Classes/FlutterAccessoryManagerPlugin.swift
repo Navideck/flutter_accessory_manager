@@ -5,13 +5,17 @@ import UIKit
 public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAccessoryPlatformChannel {
   var callbackChannel: FlutterAccessoryCallbackChannel
   private var manager = EAAccessoryManager.shared()
+  private var eaSessionDisconnectionCompleterMap = [String: (Result<Void, any Error>) -> Void]()
 
   init(callbackChannel: FlutterAccessoryCallbackChannel) {
     self.callbackChannel = callbackChannel
+    manager.registerForLocalNotifications()
     super.init()
   }
 
   public static func register(with registrar: FlutterPluginRegistrar) {
+    NotificationCenter.default.addObserver(self, selector: #selector(accessoryConnected(_:)), name: NSNotification.Name.EAAccessoryDidConnect, object: nil)
+    NotificationCenter.default.addObserver(self, selector: #selector(accessoryDisconnected(_:)), name: NSNotification.Name.EAAccessoryDidDisconnect, object: nil)
     let messenger: FlutterBinaryMessenger = registrar.messenger()
     let callbackChannel = FlutterAccessoryCallbackChannel(binaryMessenger: messenger)
     let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel)
@@ -19,36 +23,36 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
   }
 
   func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, any Error>) -> Void) {
-    // Get this from flutter, if user picked a device, and this protocol string appeared in connectedDevices, then disconnected
-    let protocolStringToDisconnect = "com.nikon.psg-0100"   // TODO: Unhardcode it
-      NotificationCenter.default.addObserver(self, selector: #selector(accessoryConnected(_:)), name: NSNotification.Name.EAAccessoryDidConnect, object: nil)
-      NotificationCenter.default.addObserver(self, selector: #selector(accessoryDisconnected(_:)), name: NSNotification.Name.EAAccessoryDidDisconnect, object: nil)
-      
-    manager.registerForLocalNotifications()
     manager.showBluetoothAccessoryPicker(withNameFilter: nil) { error in
       if let error = error {
         completion(.failure(PigeonError(code: "failed", message: error.localizedDescription, details: nil)))
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.EAAccessoryDidDisconnect, object: completion)
-        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.EAAccessoryDidConnect, object: completion)
       } else {
-        self.openAndCloseEaSession(protocolStringToDisconnect: protocolStringToDisconnect)
+        completion(.success(()))
       }
     }
   }
-    
-  private func openAndCloseEaSession(protocolStringToDisconnect: String) {
-    let accessory = manager.connectedAccessories.first { acc in
-      acc.protocolStrings.contains(protocolStringToDisconnect)
+
+  func closeEaSession(protocolString: String, completion: @escaping (Result<Void, any Error>) -> Void) {
+    if eaSessionDisconnectionCompleterMap[protocolString] != nil {
+      completion(.failure(PigeonError(code: "AlreadyInProgress", message: "Operation already in progress", details: nil)))
+      return
     }
-    guard let accessory else { return }
-    var session: EASession? = EASession(accessory: accessory, forProtocol: protocolStringToDisconnect)
+    let accessory = manager.connectedAccessories.first { acc in
+      acc.protocolStrings.contains(protocolString)
+    }
+    guard let accessory else {
+      completion(.failure(PigeonError(code: "NotFound", message: "Accessory not found", details: nil)))
+      return
+    }
+    var session: EASession? = EASession(accessory: accessory, forProtocol: protocolString)
     print("EASession opened \(String(describing: session?.description))")
     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
       print("Closing EASession")
       session = nil
     }
+    eaSessionDisconnectionCompleterMap[protocolString] = completion
   }
-    
+
   func startScan() throws {
     throw PigeonError(code: "NotSupported", message: nil, details: nil)
   }
@@ -64,8 +68,8 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
   func getPairedDevices() throws -> [BluetoothDevice] {
     throw PigeonError(code: "NotSupported", message: nil, details: nil)
   }
-    
-  func pair(address: String, completion: @escaping (Result<Bool, any Error>) -> Void) {
+
+  func pair(address _: String, completion: @escaping (Result<Bool, any Error>) -> Void) {
     completion(.failure(PigeonError(code: "NotSupported", message: nil, details: nil)))
   }
 
@@ -81,10 +85,9 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
     guard let connectedAccessory else { return }
     print("Accessory Disconnected")
     callbackChannel.accessoryDisconnected(accessory: connectedAccessory.toEAAccessoryObject()) { _ in }
-      completion(.success(()))  // TODO: Get it from an instance dictionary property
-      
-    NotificationCenter.default.removeObserver(self, name: NSNotification.Name.EAAccessoryDidDisconnect, object: notification.object)
-    NotificationCenter.default.removeObserver(self, name: NSNotification.Name.EAAccessoryDidConnect, object: notification.object)
+    for protocolString in connectedAccessory.protocolStrings {
+      eaSessionDisconnectionCompleterMap.removeValue(forKey: protocolString)?(.success(()))
+    }
   }
 }
 

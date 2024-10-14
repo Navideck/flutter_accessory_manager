@@ -55,6 +55,10 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
         )
         completion(.success(()))
     }
+    
+    func closeEaSession(protocolString: String, completion: @escaping (Result<Void, any Error>) -> Void) {
+    }
+    
 
     func pair(address: String, completion: @escaping (Result<Bool, any Error>) -> Void) {
         if let device = devices[address] {

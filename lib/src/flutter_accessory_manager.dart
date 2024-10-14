@@ -25,6 +25,9 @@ class FlutterAccessoryManager {
   static Future<void> showBluetoothAccessoryPicker() =>
       _channel.showBluetoothAccessoryPicker();
 
+  static Future<void> closeEaSession(String protocolString) =>
+      _channel.closeEaSession(protocolString);
+
   static Future<void> startScan() => _channel.startScan();
 
   static Future<void> stopScan() => _channel.stopScan();

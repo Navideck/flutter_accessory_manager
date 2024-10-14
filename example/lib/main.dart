@@ -137,6 +137,15 @@ class _MyAppState extends State<MyApp> {
                 text: "ShowBluetoothAccessoryPicker",
               ),
               PlatformButton(
+                onPressed: () async {
+                  print("Close EaSession");
+                  await FlutterAccessoryManager.closeEaSession(
+                      "com.nikon.psg-0100");
+                  print("Closed EaSession");
+                },
+                text: "Close EaSession",
+              ),
+              PlatformButton(
                 text: "Check Permissions",
                 onPressed: () async {
                   bool hasPermissions =

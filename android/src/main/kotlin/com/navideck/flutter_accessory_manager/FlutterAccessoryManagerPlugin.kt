@@ -55,6 +55,10 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
         callback(Result.failure(FlutterError("NotImplemented", "Not implemented on this platform")))
     }
 
+    override fun closeEaSession(protocolString: String, callback: (Result<Unit>) -> Unit) {
+        callback(Result.failure(FlutterError("NotImplemented", "Not implemented on this platform")))
+    }
+
     override fun startScan() {
         val adapter = bluetoothAdapter ?: return
 

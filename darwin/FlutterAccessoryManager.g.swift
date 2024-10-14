@@ -205,6 +205,7 @@ class FlutterAccessoryManagerPigeonCodec: FlutterStandardMessageCodec, @unchecke
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol FlutterAccessoryPlatformChannel {
   func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void)
+  func closeEaSession(protocolString: String, completion: @escaping (Result<Void, Error>) -> Void)
   func startScan() throws
   func stopScan() throws
   func isScanning() throws -> Bool
@@ -232,6 +233,23 @@ class FlutterAccessoryPlatformChannelSetup {
       }
     } else {
       showBluetoothAccessoryPickerChannel.setMessageHandler(nil)
+    }
+    let closeEaSessionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.closeEaSession\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      closeEaSessionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let protocolStringArg = args[0] as! String
+        api.closeEaSession(protocolString: protocolStringArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      closeEaSessionChannel.setMessageHandler(nil)
     }
     let startScanChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.startScan\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

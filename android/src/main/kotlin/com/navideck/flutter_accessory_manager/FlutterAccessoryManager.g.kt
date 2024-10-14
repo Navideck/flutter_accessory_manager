@@ -157,6 +157,7 @@ private open class FlutterAccessoryManagerPigeonCodec : StandardMessageCodec() {
  */
 interface FlutterAccessoryPlatformChannel {
   fun showBluetoothAccessoryPicker(callback: (Result<Unit>) -> Unit)
+  fun closeEaSession(protocolString: String, callback: (Result<Unit>) -> Unit)
   fun startScan()
   fun stopScan()
   fun isScanning(): Boolean
@@ -177,6 +178,25 @@ interface FlutterAccessoryPlatformChannel {
         if (api != null) {
           channel.setMessageHandler { _, reply ->
             api.showBluetoothAccessoryPicker{ result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(wrapError(error))
+              } else {
+                reply.reply(wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.closeEaSession$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val protocolStringArg = args[0] as String
+            api.closeEaSession(protocolStringArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(wrapError(error))
