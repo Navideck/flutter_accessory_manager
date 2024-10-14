@@ -13,7 +13,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface IOBluetoothPairingControllerObjC : NSObject
 
-- (void)runModal;
++ (instancetype)pairingController;
+- (int)runModal;
+- (NSArray *)getResults;
+- (void)setOptions:(IOBluetoothServiceBrowserControllerOptions)options;
+- (IOBluetoothServiceBrowserControllerOptions)getOptions;
+- (void)setSearchAttributes:(const IOBluetoothDeviceSearchAttributes *)searchAttributes;
+- (const IOBluetoothDeviceSearchAttributes *)getSearchAttributes;
+- (void)addAllowedUUID:(IOBluetoothSDPUUID *)allowedUUID;
+- (void)addAllowedUUIDArray:(NSArray *)allowedUUIDArray;
+- (void)clearAllowedUUIDs;
+- (void)setTitle:(NSString *)windowTitle;
+- (NSString *)getTitle;
+- (void)setDescriptionText:(NSString *)descriptionText;
+- (NSString *)getDescriptionText;
+- (void)setPrompt:(NSString *)prompt;
+- (NSString *)getPrompt;
 
 @end
 

@@ -48,7 +48,11 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
     }
 
     func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void) {
-        pairingController.runModal()
+        pairingController.performSelector(
+            onMainThread: #selector(IOBluetoothPairingController.runModal),
+            with: nil,
+            waitUntilDone: false
+        )
         completion(.success(()))
     }
 
@@ -75,6 +79,13 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
         } else {
             completion(.failure(PigeonError(code: "NotFound", message: "Please start scan first", details: nil)))
         }
+    }
+}
+
+extension IOBluetoothPairingController {
+    @objc func runModalWithCompletion(_ completion: @escaping (Int32) -> Void) {
+        let result = runModal()
+        completion(result)
     }
 }
 
