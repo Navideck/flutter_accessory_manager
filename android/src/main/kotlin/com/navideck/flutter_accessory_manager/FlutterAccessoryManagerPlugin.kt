@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import java.util.UUID
 
 private const val TAG = "FlutterAccessoryManagerPlugin"
 
@@ -57,6 +58,23 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
 
     override fun closeEaSession(protocolString: String, callback: (Result<Unit>) -> Unit) {
         callback(Result.failure(FlutterError("NotImplemented", "Not implemented on this platform")))
+        val device = bluetoothAdapter?.bondedDevices?.first {
+            it.name == protocolString
+        }
+        if (device == null) {
+            callback(Result.failure(FlutterError("NotFound", "Device not found in bonded devices")))
+            return
+        }
+        // Open and Close Socket
+        // TODO: do not hardcode this value
+        val socket =
+            device.createRfcommSocketToServiceRecord(UUID.fromString("0000de00-3dd4-4255-8d62-6dc7b9bd5561"))
+        Log.d(TAG, "Connecting Socket")
+        socket.connect()
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d(TAG, "Closing Socket")
+            socket.close()
+        }, 1000)
     }
 
     override fun startScan() {
