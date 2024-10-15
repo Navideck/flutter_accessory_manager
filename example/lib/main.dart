@@ -129,7 +129,7 @@ class _MyAppState extends State<MyApp> {
                   try {
                     await FlutterAccessoryManager
                         .showBluetoothAccessoryPicker();
-                    print("showBluetoothAccessoryPicker");
+                    print("showed BluetoothAccessoryPicker");
                   } catch (e) {
                     print(e);
                   }
@@ -138,7 +138,7 @@ class _MyAppState extends State<MyApp> {
               ),
               PlatformButton(
                 onPressed: () async {
-                  print("Close EaSession");
+                  print("Closing EaSession");
                   await FlutterAccessoryManager.closeEaSession(
                       "com.nikon.psg-0100");
                   print("Closed EaSession");
