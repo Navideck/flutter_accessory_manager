@@ -11,11 +11,12 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, FlutterAcce
     self.callbackChannel = callbackChannel
     manager.registerForLocalNotifications()
     super.init()
+      
+    NotificationCenter.default.addObserver(self, selector: #selector(accessoryConnected(_:)), name: NSNotification.Name.EAAccessoryDidConnect, object: nil)
+    NotificationCenter.default.addObserver(self, selector: #selector(accessoryDisconnected(_:)), name: NSNotification.Name.EAAccessoryDidDisconnect, object: nil)
   }
 
   public static func register(with registrar: FlutterPluginRegistrar) {
-    NotificationCenter.default.addObserver(self, selector: #selector(accessoryConnected(_:)), name: NSNotification.Name.EAAccessoryDidConnect, object: nil)
-    NotificationCenter.default.addObserver(self, selector: #selector(accessoryDisconnected(_:)), name: NSNotification.Name.EAAccessoryDidDisconnect, object: nil)
     let messenger: FlutterBinaryMessenger = registrar.messenger()
     let callbackChannel = FlutterAccessoryCallbackChannel(binaryMessenger: messenger)
     let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel)
