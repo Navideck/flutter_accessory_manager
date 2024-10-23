@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
 
 dev_dependencies:
   flutter_test:
@@ -21,5 +20,10 @@ dev_dependencies:
 flutter:
   plugin:
     platforms:
+      android:
+        package: com.navideck.flutter_accessory_manager
+        pluginClass: FlutterAccessoryManagerPlugin
       ios:
+        pluginClass: FlutterAccessoryManagerPlugin
+      macos:
         pluginClass: FlutterAccessoryManagerPlugin

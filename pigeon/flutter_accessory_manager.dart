@@ -1,13 +1,21 @@
 import 'package:pigeon/pigeon.dart';
 
 // dart run pigeon --input pigeon/flutter_accessory_manager.dart
+// To create Macos/Ios symlinks,
+// Navigate to directories, eg: cd macos/Classes, and run
+// ln -s ../../darwin/FlutterAccessoryManager.g.swift FlutterAccessoryManager.g.swift
+// ln -s ../../darwin/FlutterAccessoryManager.g.swift FlutterAccessoryManager.g.swift
 @ConfigurePigeon(
   PigeonOptions(
     dartPackageName: 'flutter_accessory_manager',
     dartOut: 'lib/src/flutter_accessory_manager.g.dart',
     dartOptions: DartOptions(),
-    swiftOut: 'ios/Classes/FlutterAccessoryManager.g.swift',
+    kotlinOut:
+        'android/src/main/kotlin/com/navideck/flutter_accessory_manager/FlutterAccessoryManager.g.kt',
+    swiftOut: 'darwin/FlutterAccessoryManager.g.swift',
     swiftOptions: SwiftOptions(),
+    kotlinOptions:
+        KotlinOptions(package: 'com.navideck.flutter_accessory_manager'),
     debugGenerators: true,
   ),
 )
@@ -17,6 +25,20 @@ import 'package:pigeon/pigeon.dart';
 abstract class FlutterAccessoryPlatformChannel {
   @async
   void showBluetoothAccessoryPicker();
+
+  @async
+  void closeEaSession(String protocolString);
+
+  void startScan();
+
+  void stopScan();
+
+  bool isScanning();
+
+  List<BluetoothDevice> getPairedDevices();
+
+  @async
+  bool pair(String address);
 }
 
 /// Native -> Flutter
@@ -25,6 +47,22 @@ abstract class FlutterAccessoryCallbackChannel {
   void accessoryConnected(EAAccessoryObject accessory);
 
   void accessoryDisconnected(EAAccessoryObject accessory);
+
+  void onDeviceDiscover(BluetoothDevice device);
+}
+
+class BluetoothDevice {
+  String address;
+  String? name;
+  bool paired;
+  int rssi;
+
+  BluetoothDevice({
+    required this.address,
+    required this.name,
+    required this.paired,
+    required this.rssi,
+  });
 }
 
 class EAAccessoryObject {
