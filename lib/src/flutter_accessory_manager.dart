@@ -32,6 +32,8 @@ class FlutterAccessoryManager {
 
   static Future<void> stopScan() => _channel.stopScan();
 
+  static Future<bool> isScanning() => _channel.isScanning();
+
   static Future<bool> pair(String address) => _channel.pair(address);
 
   static Future<List<BluetoothDevice>> getPairedDevices() =>

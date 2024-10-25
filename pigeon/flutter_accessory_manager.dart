@@ -16,6 +16,9 @@ import 'package:pigeon/pigeon.dart';
     swiftOptions: SwiftOptions(),
     kotlinOptions:
         KotlinOptions(package: 'com.navideck.flutter_accessory_manager'),
+    cppOptions: CppOptions(namespace: 'flutter_accessory_manager'),
+    cppHeaderOut: 'windows/FlutterAccessoryManager.g.h',
+    cppSourceOut: 'windows/FlutterAccessoryManager.g.cpp',
     debugGenerators: true,
   ),
 )
