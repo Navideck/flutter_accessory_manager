@@ -88,6 +88,9 @@
     "future": "cpp",
     "regex": "cpp"
   },
+  "cSpell.ignorePaths": [
+    "linux/"
+  ],
   "cSpell.words": [
     "bytevc",
     "hresult",

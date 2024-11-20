@@ -31,3 +31,5 @@ flutter:
         pluginClass: FlutterAccessoryManagerPlugin
       windows:
           pluginClass: FlutterAccessoryManagerPluginCApi
+      linux:
+        pluginClass: FlutterAccessoryManagerPlugin

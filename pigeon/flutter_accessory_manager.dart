@@ -19,6 +19,9 @@ import 'package:pigeon/pigeon.dart';
     cppOptions: CppOptions(namespace: 'flutter_accessory_manager'),
     cppHeaderOut: 'windows/FlutterAccessoryManager.g.h',
     cppSourceOut: 'windows/FlutterAccessoryManager.g.cpp',
+    gobjectHeaderOut: 'linux/FlutterAccessoryManager.g.h',
+    gobjectSourceOut: 'linux/FlutterAccessoryManager.g.cc',
+    gobjectOptions: GObjectOptions(),
     debugGenerators: true,
   ),
 )
