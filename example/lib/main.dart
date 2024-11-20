@@ -96,7 +96,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> onDeviceSelect(BluetoothDevice device) async {
+  Future<void> pairDevice(BluetoothDevice device) async {
     try {
       await stopScan();
       print("Pairing");
@@ -166,6 +166,17 @@ class _MyAppState extends State<MyApp> {
               PlatformButton(
                 onPressed: () async {
                   try {
+                    bool scanning = await FlutterAccessoryManager.isScanning();
+                    print("Scanning: $scanning");
+                  } catch (e) {
+                    print(e);
+                  }
+                },
+                text: "IsScanning",
+              ),
+              PlatformButton(
+                onPressed: () async {
+                  try {
                     devices.clear();
                     devices.addAll(
                       await FlutterAccessoryManager.getPairedDevices(),
@@ -194,11 +205,32 @@ class _MyAppState extends State<MyApp> {
               itemCount: devices.length,
               itemBuilder: (BuildContext context, int index) {
                 BluetoothDevice device = devices[index];
-                return ListTile(
-                  title: Text(device.name ?? "N/A"),
-                  subtitle: Text(device.address),
-                  trailing: Text(device.rssi.toString()),
-                  onTap: () => onDeviceSelect(device),
+                return Column(
+                  children: [
+                    ListTile(
+                      title: Text(device.name ?? "N/A"),
+                      subtitle: Text(device.address),
+                      trailing: Text(device.rssi.toString()),
+                    ),
+                    ResponsiveButtonsGrid(
+                      children: [
+                        PlatformButton(
+                          onPressed: () => pairDevice(device),
+                          text: "Pair",
+                        ),
+                        PlatformButton(
+                          onPressed: () async {
+                            print("Disconnecting");
+                            await FlutterAccessoryManager.closeEaSession(
+                              device.address,
+                            );
+                            print("Disconnected");
+                          },
+                          text: "Disconnect",
+                        ),
+                      ],
+                    )
+                  ],
                 );
               },
               separatorBuilder: (BuildContext context, int index) {
