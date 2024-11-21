@@ -186,7 +186,7 @@ namespace flutter_accessory_manager
             isConnectableKey,
             signalStrengthKey,
         },
-        DeviceInformationKind::Device);
+        DeviceInformationKind::AssociationEndpoint);
 
     deviceWatcherAddedToken = deviceWatcher.Added([this](DeviceWatcher sender, DeviceInformation deviceInfo)
                                                   {
