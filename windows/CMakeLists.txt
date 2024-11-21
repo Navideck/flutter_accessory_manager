@@ -36,6 +36,7 @@ list(APPEND PLUGIN_SOURCES
   "FlutterAccessoryManager.g.h"
   "flutter_accessory_manager_plugin.cpp"
   "flutter_accessory_manager_plugin.h"
+  "ui_thread_handler.hpp"
 )
 
 add_library(${PLUGIN_NAME} SHARED

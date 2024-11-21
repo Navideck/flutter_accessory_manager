@@ -15,6 +15,7 @@
 #include <winrt/Windows.Storage.Streams.h>
 
 #include <memory>
+#include "ui_thread_handler.hpp"
 
 namespace flutter_accessory_manager
 {
@@ -49,17 +50,20 @@ namespace flutter_accessory_manager
         FlutterAccessoryManagerPlugin(const FlutterAccessoryManagerPlugin &) = delete;
         FlutterAccessoryManagerPlugin &operator=(const FlutterAccessoryManagerPlugin &) = delete;
 
+        UiThreadHandler uiThreadHandler_;
         DeviceWatcher deviceWatcher{nullptr};
         winrt::event_token deviceWatcherAddedToken;
         winrt::event_token deviceWatcherUpdatedToken;
         winrt::event_token deviceWatcherRemovedToken;
+        winrt::event_token deviceWatcherEnumerationCompletedToken;
+        winrt::event_token deviceWatcherStoppedToken;
         std::unordered_map<std::string, DeviceInformation> deviceWatcherDevices{};
 
         void setupDeviceWatcher();
         BluetoothDevice DeviceInfoToBluetoothDevice(DeviceInformation deviceInfo);
         winrt::fire_and_forget ShowDevicePicker(std::function<void(std::optional<FlutterError> reply)> result);
         winrt::fire_and_forget PairAsync(const std::string &address, std::function<void(ErrorOr<bool> reply)> result);
-        winrt::fire_and_forget DisconnectAsync(const std::string& protocol_string,std::function<void(std::optional<FlutterError> reply)> result);
+        winrt::fire_and_forget DisconnectAsync(const std::string &protocol_string, std::function<void(std::optional<FlutterError> reply)> result);
 
         // Channel
         void ShowBluetoothAccessoryPicker(std::function<void(std::optional<FlutterError> reply)> result);

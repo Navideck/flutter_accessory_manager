@@ -30,7 +30,10 @@ namespace flutter_accessory_manager
     registrar->AddPlugin(std::move(plugin));
   }
 
-  FlutterAccessoryManagerPlugin::FlutterAccessoryManagerPlugin(flutter::PluginRegistrarWindows *registrar) {}
+  FlutterAccessoryManagerPlugin::FlutterAccessoryManagerPlugin(flutter::PluginRegistrarWindows *registrar)
+      : uiThreadHandler_(registrar)
+  {
+  }
 
   FlutterAccessoryManagerPlugin::~FlutterAccessoryManagerPlugin() {}
 
@@ -89,6 +92,8 @@ namespace flutter_accessory_manager
         deviceWatcher.Added(deviceWatcherAddedToken);
         deviceWatcher.Updated(deviceWatcherUpdatedToken);
         deviceWatcher.Removed(deviceWatcherRemovedToken);
+        deviceWatcher.EnumerationCompleted(deviceWatcherEnumerationCompletedToken);
+        deviceWatcher.Stopped(deviceWatcherStoppedToken);
         deviceWatcher = nullptr;
         deviceWatcherDevices.clear();
       }
@@ -109,11 +114,13 @@ namespace flutter_accessory_manager
 
   ErrorOr<bool> FlutterAccessoryManagerPlugin::IsScanning()
   {
-    if (deviceWatcher != nullptr)
+    if (deviceWatcher == nullptr)
     {
       return false;
     }
-    return deviceWatcher.Status() == DeviceWatcherStatus::Started;
+    auto status = deviceWatcher.Status();
+    std::cout << "CurrentState: " << DeviceWatcherStatusToString(status) << std::endl;
+    return status != DeviceWatcherStatus::Stopped;
   }
 
   ErrorOr<flutter::EncodableList> FlutterAccessoryManagerPlugin::GetPairedDevices()
@@ -185,7 +192,9 @@ namespace flutter_accessory_manager
                                                   {
                                                     std::string deviceId = winrt::to_string(deviceInfo.Id());
                                                     deviceWatcherDevices.insert_or_assign(deviceId, deviceInfo);
-                                                    callbackChannel->OnDeviceDiscover(DeviceInfoToBluetoothDevice(deviceInfo), SuccessCallback, ErrorCallback);
+                                                    auto device = DeviceInfoToBluetoothDevice(deviceInfo);
+                                                    uiThreadHandler_.Post([device]
+                                                                          { callbackChannel->OnDeviceDiscover(device, SuccessCallback, ErrorCallback); });
                                                     // On Device Added
                                                   });
 
@@ -196,7 +205,9 @@ namespace flutter_accessory_manager
                                                         if (it != deviceWatcherDevices.end())
                                                         {
                                                           it->second.Update(deviceInfoUpdate);
-                                                          callbackChannel->OnDeviceDiscover(DeviceInfoToBluetoothDevice(it->second), SuccessCallback, ErrorCallback);
+                                                          auto device = DeviceInfoToBluetoothDevice(it->second);
+                                                          uiThreadHandler_.Post([device]
+                                                                                { callbackChannel->OnDeviceDiscover(device, SuccessCallback, ErrorCallback); });
                                                         }
                                                         // On Device Updated
                                                       });
@@ -207,6 +218,12 @@ namespace flutter_accessory_manager
                                                         deviceWatcherDevices.erase(deviceId);
                                                         // On Device Removed
                                                       });
+
+    deviceWatcherEnumerationCompletedToken = deviceWatcher.EnumerationCompleted([this](DeviceWatcher sender, IInspectable args)
+                                                                                { std::cout << "DeviceWatcherEvent: EnumerationCompleted" << std::endl; });
+
+    deviceWatcherStoppedToken = deviceWatcher.Stopped([this](DeviceWatcher sender, IInspectable args)
+                                                      { std::cout << "DeviceWatcherEvent: Stopped" << std::endl; });
   }
 
   winrt::fire_and_forget FlutterAccessoryManagerPlugin::ShowDevicePicker(std::function<void(std::optional<FlutterError> reply)> result)
