@@ -186,7 +186,7 @@ namespace flutter_accessory_manager
             isConnectableKey,
             signalStrengthKey,
         },
-        DeviceInformationKind::AssociationEndpoint);
+        DeviceInformationKind::Device);
 
     deviceWatcherAddedToken = deviceWatcher.Added([this](DeviceWatcher sender, DeviceInformation deviceInfo)
                                                   {
@@ -309,28 +309,33 @@ namespace flutter_accessory_manager
   BluetoothDevice FlutterAccessoryManagerPlugin::DeviceInfoToBluetoothDevice(DeviceInformation deviceInfo)
   {
     auto properties = deviceInfo.Properties();
-
     hstring address = deviceInfo.Id();
     if (properties.HasKey(deviceAddressKey))
     {
       auto bluetoothAddressPropertyValue = properties.Lookup(deviceAddressKey).as<IPropertyValue>();
-      address = bluetoothAddressPropertyValue.GetString();
+      if(bluetoothAddressPropertyValue != nullptr){
+        address = bluetoothAddressPropertyValue.GetString();
+      }
     }
 
     bool isPaired = deviceInfo.Pairing().IsPaired();
     if (properties.HasKey(isPairedKey))
     {
       auto isPairedPropertyValue = properties.Lookup(isPairedKey).as<IPropertyValue>();
-      isPaired = isPairedPropertyValue.GetBoolean();
+      if(isPairedPropertyValue != nullptr){
+        isPaired = isPairedPropertyValue.GetBoolean();
+      }
     }
 
     int64_t rssi = 0;
     if (properties.HasKey(signalStrengthKey))
     {
       auto rssiPropertyValue = properties.Lookup(signalStrengthKey).as<IPropertyValue>();
-      rssi = rssiPropertyValue.GetInt64();
+      if(rssiPropertyValue != nullptr){
+        rssi = rssiPropertyValue.GetInt64();
+      }
     }
-
+    
     auto deviceAddress = ParseBluetoothClientId(address);
     std::string name = winrt::to_string(deviceInfo.Name());
 
