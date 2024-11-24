@@ -6,14 +6,13 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     var callbackChannel: FlutterAccessoryCallbackChannel
 
     lazy var inquiry: IOBluetoothDeviceInquiry = .init(delegate: self)
-    var devicePair: IOBluetoothDevicePair?
     private var isInquiryStarted = false
     var devices = [String: IOBluetoothDevice]()
-    var pairingFuture = [String: (Result<Bool, any Error>) -> Void]()
-    
+    var pairDelegate: IOBluetoothPairingDelegate?
+
     // We initialize IOBluetoothPairingController in ObjC because in Swift no modal is shown
     // This also does not work on native apps
-    lazy private var pairingController = IOBluetoothPairingControllerObjC()
+    private lazy var pairingController = IOBluetoothPairingControllerObjC()
 
     init(callbackChannel: FlutterAccessoryCallbackChannel) {
         self.callbackChannel = callbackChannel
@@ -55,41 +54,58 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
         )
         completion(.success(()))
     }
-    
+
     func closeEaSession(protocolString: String, completion: @escaping (Result<Void, any Error>) -> Void) {
+        guard let device = IOBluetoothDevice(addressString: protocolString) else {
+            completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
+            return
+        }
+        let ioReturn: IOReturn = device.closeConnection()
+        if ioReturn == kIOReturnSuccess {
+            completion(.success(()))
+            return
+        }
+        let errorString = String(cString: mach_error_string(Int32(ioReturn)))
+        completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
     }
-    
 
     func pair(address: String, completion: @escaping (Result<Bool, any Error>) -> Void) {
-        if let device = devices[address] {
-//            if pairingFuture[address] != nil {
-//                completion(.failure(PigeonError(code: "InProgress", message: "Pairing request already in progress", details: nil)))
-//                return
-//            }
+        guard let device = IOBluetoothDevice(addressString: address) else {
+            completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
+            return
+        }
 
-            // TODO: Why to store as global variable ?
-            devicePair = IOBluetoothDevicePair(device: device)
-            devicePair?.delegate = self
-            let result = devicePair?.start()
-            if result != kIOReturnSuccess {
-                completion(.failure(PigeonError(code: "Failed", message: "Pairing failed", details: nil)))
+        // Initiate Connection
+        DispatchQueue.global(qos: .background).async {
+            if device.isConnected() {
+                print("Already connected \(address)")
+                completion(.success(true))
                 return
             }
 
-            // Store the Future to complete later from callback
-            print("Waiting for pair result")
-            // pairingFuture[device.addressString] = completion
-            completion(.success(true))
-        } else {
-            completion(.failure(PigeonError(code: "NotFound", message: "Please start scan first", details: nil)))
+            let timeout = 2.0
+            let ioReturn: IOReturn = device.openConnection(
+                nil,
+                withPageTimeout: UInt16(round(timeout * 1600)),
+                authenticationRequired: true
+            )
+
+            if ioReturn == kIOReturnSuccess {
+                completion(.success(true))
+                return
+            }
+
+            let errorString = String(cString: mach_error_string(Int32(ioReturn)))
+            completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
         }
     }
-}
 
-extension IOBluetoothPairingController {
-    @objc func runModalWithCompletion(_ completion: @escaping (Int32) -> Void) {
-        let result = runModal()
-        completion(result)
+    func unpair(address: String) -> Bool? {
+        guard let device = IOBluetoothDevice(addressString: address) else { return nil }
+        // There is no public API for unPairing, so we need this ugly hack with a custom selector
+        let selector = Selector(("remove"))
+        if device.responds(to: selector) { device.perform(selector) }
+        return !device.isPaired()
     }
 }
 
@@ -132,54 +148,60 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
     }
 }
 
-extension FlutterAccessoryManagerPlugin: IOBluetoothDevicePairDelegate {
-    @objc public func devicePairingStarted(_: Any!) {
+@objcMembers
+class IOBluetoothPairingDelegate: NSObject, IOBluetoothDevicePairDelegate {
+    var devicePair: IOBluetoothDevicePair?
+
+    init(devicePair: IOBluetoothDevicePair?) {
+        self.devicePair = devicePair
+        super.init()
+    }
+
+    public func devicePairingStarted(_: Any!) {
         print("PairingStarted")
     }
 
-    @objc public func devicePairingConnecting(_: Any!) {
+    public func devicePairingConnecting(_: Any!) {
         print("PairingConnecting")
     }
 
-    @objc public func devicePairingConnected(_: Any!) {
+    public func devicePairingConnected(_: Any!) {
         print("PairingConnected")
     }
 
-    @objc public func devicePairingUserConfirmationRequest(_: Any!, numericValue: BluetoothNumericValue) {
+    public func devicePairingUserConfirmationRequest(_: Any!, numericValue: BluetoothNumericValue) {
         print("PairingUserConfirmationRequest (numericValue: \(numericValue))")
-        devicePair?.replyUserConfirmation(true)
+        let alert = NSAlert()
+        alert.messageText = "PIN Verification"
+        alert.informativeText = "Passkey: \(numericValue)"
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Confirm")
+        alert.addButton(withTitle: "Cancel")
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            print("Confirm Pressed")
+            devicePair?.replyUserConfirmation(true)
+        } else if response == .alertSecondButtonReturn {
+            print("Cancel Pressed")
+            devicePair?.replyUserConfirmation(false)
+        }
     }
 
-    @objc public func devicePairingUserPasskeyNotification(_: Any!, passkey _: BluetoothPasskey) {
+    public func devicePairingUserPasskeyNotification(_: Any!, passkey _: BluetoothPasskey) {
         print("PairingUserPasskeyNotification")
     }
 
-    @objc public func devicePairingPINCodeRequest(_: Any!) {
+    public func devicePairingPINCodeRequest(_: Any!) {
         print("PairingPINCodeRequest")
     }
 
-    @objc public func deviceSimplePairingComplete(_: Any!, status _: BluetoothHCIEventStatus) {
+    public func deviceSimplePairingComplete(_: Any!, status _: BluetoothHCIEventStatus) {
         print("Simple Pairing Complete")
     }
 
-    @objc public func devicePairingFinished(_: Any!, error: IOReturn) {
-        print("Pairing Result: \(error)")
-
-//        Complete Flutter result
-//        if let device = sender as? IOBluetoothDevice {
-//            completePairFuture(address: device.addressString, error: error)
-//        }
-    }
-
-    func completePairFuture(address: String, error: IOReturn) {
-        if let future = pairingFuture.removeValue(forKey: address) {
-            print("Sending result to flutter")
-            if error == kIOReturnSuccess {
-                future(.success(true))
-            } else {
-                future(.failure(PigeonError(code: "Failed", message: "Pairing failed with error \(error)", details: nil)))
-            }
-        }
+    public func devicePairingFinished(_: Any!, error: IOReturn) {
+        let errorString = String(cString: mach_error_string(Int32(error)))
+        print("PairingFinished: \(error):  \(errorString)")
     }
 }
 
