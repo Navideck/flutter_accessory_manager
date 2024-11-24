@@ -98,17 +98,6 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
             let errorString = String(cString: mach_error_string(Int32(ioReturn)))
             completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
         }
-
-//        let devicePair = IOBluetoothDevicePair(device: device)
-//        pairDelegate = IOBluetoothPairingDelegate(devicePair: devicePair)
-//        devicePair?.delegate = pairDelegate
-//        let result = devicePair?.start()
-//        if result != kIOReturnSuccess {
-//            completion(.failure(PigeonError(code: "Failed", message: "Pairing failed", details: nil)))
-//            return
-//        }
-//        print("Waiting for pair result")
-//        completion(.success(true))
     }
 
     func unpair(address: String) -> Bool? {
