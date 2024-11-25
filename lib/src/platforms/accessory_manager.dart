@@ -36,11 +36,6 @@ class AccessoryManager extends FlutterAccessoryManagerInterface {
   @override
   Future<List<BluetoothDevice>> getPairedDevices() =>
       _channel.getPairedDevices();
-
-  @override
-  Future<void> closeEaSession(String protocolString) {
-    throw UnimplementedError();
-  }
 }
 
 // Handle callbacks from Native to Flutter
