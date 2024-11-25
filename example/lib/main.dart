@@ -220,7 +220,7 @@ class _MyAppState extends State<MyApp> {
                         PlatformButton(
                           onPressed: () async {
                             print("Disconnecting");
-                            await FlutterAccessoryManager.closeEaSession(
+                            await FlutterAccessoryManager.disconnect(
                               device.address,
                             );
                             print("Disconnected");
