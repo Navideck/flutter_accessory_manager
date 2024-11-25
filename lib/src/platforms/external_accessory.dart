@@ -14,8 +14,9 @@ class ExternalAccessory extends FlutterAccessoryManagerInterface {
   @override
   Future<void> showBluetoothAccessoryPicker({
     List<String>? withNames,
-  }) =>
-      _channel.showBluetoothAccessoryPicker(withNames ?? []);
+  }) {
+    return _channel.showBluetoothAccessoryPicker(withNames ?? []);
+  }
 
   @override
   Future<void> closeEaSession(String protocolString) =>
