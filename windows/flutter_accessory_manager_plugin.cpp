@@ -37,16 +37,18 @@ namespace flutter_accessory_manager
 
   FlutterAccessoryManagerPlugin::~FlutterAccessoryManagerPlugin() {}
 
-  void FlutterAccessoryManagerPlugin::ShowBluetoothAccessoryPicker(std::function<void(std::optional<FlutterError> reply)> result)
+  void FlutterAccessoryManagerPlugin::ShowBluetoothAccessoryPicker(
+      const flutter::EncodableList &with_names,
+      std::function<void(std::optional<FlutterError> reply)> result)
   {
     ShowDevicePicker(result);
   }
 
-  void FlutterAccessoryManagerPlugin::CloseEaSession(
-      const std::string &protocol_string,
+  void FlutterAccessoryManagerPlugin::Disconnect(
+      const std::string &device_id,
       std::function<void(std::optional<FlutterError> reply)> result)
   {
-    DisconnectAsync(protocol_string, result);
+    DisconnectAsync(device_id, result);
   }
 
   std::optional<FlutterError> FlutterAccessoryManagerPlugin::StartScan()
@@ -277,11 +279,11 @@ namespace flutter_accessory_manager
     }
   }
 
-  winrt::fire_and_forget FlutterAccessoryManagerPlugin::DisconnectAsync(const std::string &protocol_string, std::function<void(std::optional<FlutterError> reply)> result)
+  winrt::fire_and_forget FlutterAccessoryManagerPlugin::DisconnectAsync(const std::string &device_id, std::function<void(std::optional<FlutterError> reply)> result)
   {
     try
     {
-      Bluetooth::BluetoothDevice device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(protocol_string));
+      Bluetooth::BluetoothDevice device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(device_id));
       if (device != nullptr && device.ConnectionStatus() == BluetoothConnectionStatus::Connected)
       {
         device.Close();
@@ -313,7 +315,8 @@ namespace flutter_accessory_manager
     if (properties.HasKey(deviceAddressKey))
     {
       auto bluetoothAddressPropertyValue = properties.Lookup(deviceAddressKey).as<IPropertyValue>();
-      if(bluetoothAddressPropertyValue != nullptr){
+      if (bluetoothAddressPropertyValue != nullptr)
+      {
         address = bluetoothAddressPropertyValue.GetString();
       }
     }
@@ -322,7 +325,8 @@ namespace flutter_accessory_manager
     if (properties.HasKey(isPairedKey))
     {
       auto isPairedPropertyValue = properties.Lookup(isPairedKey).as<IPropertyValue>();
-      if(isPairedPropertyValue != nullptr){
+      if (isPairedPropertyValue != nullptr)
+      {
         isPaired = isPairedPropertyValue.GetBoolean();
       }
     }
@@ -331,11 +335,12 @@ namespace flutter_accessory_manager
     if (properties.HasKey(signalStrengthKey))
     {
       auto rssiPropertyValue = properties.Lookup(signalStrengthKey).as<IPropertyValue>();
-      if(rssiPropertyValue != nullptr){
+      if (rssiPropertyValue != nullptr)
+      {
         rssi = rssiPropertyValue.GetInt64();
       }
     }
-    
+
     auto deviceAddress = ParseBluetoothClientId(address);
     std::string name = winrt::to_string(deviceInfo.Name());
 

@@ -63,12 +63,14 @@ namespace flutter_accessory_manager
         BluetoothDevice DeviceInfoToBluetoothDevice(DeviceInformation deviceInfo);
         winrt::fire_and_forget ShowDevicePicker(std::function<void(std::optional<FlutterError> reply)> result);
         winrt::fire_and_forget PairAsync(const std::string &address, std::function<void(ErrorOr<bool> reply)> result);
-        winrt::fire_and_forget DisconnectAsync(const std::string &protocol_string, std::function<void(std::optional<FlutterError> reply)> result);
+        winrt::fire_and_forget DisconnectAsync(const std::string &device_id, std::function<void(std::optional<FlutterError> reply)> result);
 
         // Channel
-        void ShowBluetoothAccessoryPicker(std::function<void(std::optional<FlutterError> reply)> result);
-        void CloseEaSession(
-            const std::string &protocol_string,
+        void ShowBluetoothAccessoryPicker(
+            const flutter::EncodableList& with_names,
+            std::function<void(std::optional<FlutterError> reply)> result);
+        void Disconnect(
+            const std::string& device_id,
             std::function<void(std::optional<FlutterError> reply)> result);
         std::optional<FlutterError> StartScan();
         std::optional<FlutterError> StopScan();
