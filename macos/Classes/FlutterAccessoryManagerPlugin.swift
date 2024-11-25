@@ -29,6 +29,8 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
 }
 
 extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
+
+    
     func startScan() throws {
         inquiry.updateNewDeviceNames = true
         inquiry.inquiryLength = 3
@@ -46,8 +48,8 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
     func getPairedDevices() throws -> [BluetoothDevice] {
         return inquiry.foundDevices().filter { ($0 as! IOBluetoothDevice).isPaired() }.map { ($0 as! IOBluetoothDevice).toBLuetoothDevice() }
     }
-
-    func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void) {
+    
+    func showBluetoothAccessoryPicker(withNames: [String], completion: @escaping (Result<Void, any Error>) -> Void) {
         pairingController.performSelector(
             onMainThread: #selector(IOBluetoothPairingController.runModal),
             with: nil,
@@ -100,7 +102,6 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
 
     @objc public func deviceInquiryComplete(_: IOBluetoothDeviceInquiry!, error: IOReturn, aborted _: Bool) {
         isInquiryStarted = false
-        print("Device inquiry completed")
         if error != kIOReturnSuccess {
             print("Inquiry failed with error: \(error)")
         }

@@ -27,18 +27,16 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    FlutterAccessoryManager.setup();
-
-    FlutterAccessoryManager.accessoryConnected = (EAAccessoryObject accessory) {
+    FlutterAccessoryManager.accessoryConnected = (EAAccessory accessory) {
       print("Accessory Connected ${accessory.name}");
     };
 
-    FlutterAccessoryManager.accessoryDisconnected =
-        (EAAccessoryObject accessory) {
+    FlutterAccessoryManager.accessoryDisconnected = (EAAccessory accessory) {
       print("Accessory Disconnected ${accessory.name}");
     };
 
-    FlutterAccessoryManager.onDeviceDiscover = (device) {
+    FlutterAccessoryManager.onBluetoothDeviceDiscover =
+        (BluetoothDevice device) {
       print("Device Discover ${device.name} ${device.address}");
       int index = devices.indexWhere((e) => e.address == device.address);
       if (index == -1) {
@@ -48,6 +46,7 @@ class _MyAppState extends State<MyApp> {
       }
       setState(() {});
     };
+
     super.initState();
   }
 
