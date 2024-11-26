@@ -167,7 +167,7 @@ class ExternalAccessoryPigeonCodec: FlutterStandardMessageCodec, @unchecked Send
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol ExternalAccessoryChannel {
   func showBluetoothAccessoryPicker(withNames: [String], completion: @escaping (Result<Void, Error>) -> Void)
-  func closeEaSession(protocolString: String, completion: @escaping (Result<Void, Error>) -> Void)
+  func closeEaSession(protocolString: String?, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -197,7 +197,7 @@ class ExternalAccessoryChannelSetup {
     if let api = api {
       closeEaSessionChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
-        let protocolStringArg = args[0] as! String
+        let protocolStringArg: String? = nilOrValue(args[0])
         api.closeEaSession(protocolString: protocolStringArg) { result in
           switch result {
           case .success:

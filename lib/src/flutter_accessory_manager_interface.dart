@@ -12,7 +12,7 @@ abstract class FlutterAccessoryManagerInterface {
     throw UnimplementedError();
   }
 
-  Future<void> closeEaSession(String protocolString) {
+  Future<void> closeEaSession(String? protocolString) {
     throw UnimplementedError();
   }
 
