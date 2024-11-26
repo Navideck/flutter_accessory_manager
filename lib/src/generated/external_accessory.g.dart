@@ -154,8 +154,8 @@ class ExternalAccessoryChannel {
     }
   }
 
-  Future<void> closeEaSession(String? protocolString) async {
-    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_accessory_manager.ExternalAccessoryChannel.closeEaSession$pigeonVar_messageChannelSuffix';
+  Future<void> closeEASession(String? protocolString) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_accessory_manager.ExternalAccessoryChannel.closeEASession$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,

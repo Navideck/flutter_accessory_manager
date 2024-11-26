@@ -19,8 +19,8 @@ class ExternalAccessory extends FlutterAccessoryManagerInterface {
   }
 
   @override
-  Future<void> closeEaSession(String? protocolString) =>
-      _channel.closeEaSession(protocolString);
+  Future<void> closeEASession([String? protocolString]) =>
+      _channel.closeEASession(protocolString);
 }
 
 // Handle callbacks from Native to Flutter

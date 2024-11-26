@@ -39,7 +39,7 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
     }
   }
 
-  func closeEaSession(protocolString: String? = nil, completion: @escaping (Result<Void, Error>) -> Void) {
+  func closeEASession(protocolString: String? = nil, completion: @escaping (Result<Void, Error>) -> Void) {
       enum SessionError: Error {
           case alreadyInProgress
           case accessoryNotFound

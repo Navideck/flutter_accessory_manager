@@ -16,8 +16,8 @@ class FlutterAccessoryManager {
 
   /// Closes the EASession.
   /// If no protocol string is passed then it will use the first one available
-  static Future<void> closeEaSession([String? protocolString]) =>
-      _platform.closeEaSession(protocolString);
+  static Future<void> closeEASession([String? protocolString]) =>
+      _platform.closeEASession(protocolString);
 
   static Future<void> disconnect(String deviceId) =>
       _platform.disconnect(deviceId);

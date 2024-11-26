@@ -137,11 +137,11 @@ class _MyAppState extends State<MyApp> {
               ),
               PlatformButton(
                 onPressed: () async {
-                  print("Closing EaSession");
-                  await FlutterAccessoryManager.closeEaSession();
-                  print("Closed EaSession");
+                  print("Closing EASession");
+                  await FlutterAccessoryManager.closeEASession();
+                  print("Closed EASession");
                 },
-                text: "Close EaSession",
+                text: "Close EASession",
               ),
               PlatformButton(
                 text: "Check Permissions",

@@ -167,7 +167,7 @@ class ExternalAccessoryPigeonCodec: FlutterStandardMessageCodec, @unchecked Send
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol ExternalAccessoryChannel {
   func showBluetoothAccessoryPicker(withNames: [String], completion: @escaping (Result<Void, Error>) -> Void)
-  func closeEaSession(protocolString: String?, completion: @escaping (Result<Void, Error>) -> Void)
+  func closeEASession(protocolString: String?, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -193,12 +193,12 @@ class ExternalAccessoryChannelSetup {
     } else {
       showBluetoothAccessoryPickerChannel.setMessageHandler(nil)
     }
-    let closeEaSessionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.ExternalAccessoryChannel.closeEaSession\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    let closeEASessionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.ExternalAccessoryChannel.closeEASession\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
-      closeEaSessionChannel.setMessageHandler { message, reply in
+      closeEASessionChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let protocolStringArg: String? = nilOrValue(args[0])
-        api.closeEaSession(protocolString: protocolStringArg) { result in
+        api.closeEASession(protocolString: protocolStringArg) { result in
           switch result {
           case .success:
             reply(wrapResult(nil))
@@ -208,7 +208,7 @@ class ExternalAccessoryChannelSetup {
         }
       }
     } else {
-      closeEaSessionChannel.setMessageHandler(nil)
+      closeEASessionChannel.setMessageHandler(nil)
     }
   }
 }
