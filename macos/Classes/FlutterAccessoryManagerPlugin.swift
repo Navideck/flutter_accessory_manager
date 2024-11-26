@@ -43,10 +43,14 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
     }
 
     func getPairedDevices() throws -> [BluetoothDevice] {
-        return inquiry.foundDevices().filter { ($0 as! IOBluetoothDevice).isPaired() }.map { ($0 as! IOBluetoothDevice).toBLuetoothDevice() }
+        guard let paired = IOBluetoothDevice.pairedDevices() else { return [] }
+        return paired.map { device -> [BluetoothDevice] in
+            guard let d = device as? IOBluetoothDevice else { return [] }
+            return [d.toBLuetoothDevice()]
+        }.flatMap { $0 }
     }
-    
-    func showBluetoothAccessoryPicker(withNames: [String], completion: @escaping (Result<Void, any Error>) -> Void) {
+
+    func showBluetoothAccessoryPicker(withNames _: [String], completion: @escaping (Result<Void, any Error>) -> Void) {
         pairingController.performSelector(
             onMainThread: #selector(IOBluetoothPairingController.runModal),
             with: nil,
