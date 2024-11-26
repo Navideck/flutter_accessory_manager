@@ -138,8 +138,7 @@ class _MyAppState extends State<MyApp> {
               PlatformButton(
                 onPressed: () async {
                   print("Closing EaSession");
-                  await FlutterAccessoryManager.closeEaSession(
-                      "com.nikon.psg-0100");
+                  await FlutterAccessoryManager.closeEaSession();
                   print("Closed EaSession");
                 },
                 text: "Close EaSession",
