@@ -1,68 +1,58 @@
-import 'package:flutter_accessory_manager/src/flutter_accessory_manager.g.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
+import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
+import 'package:flutter_accessory_manager/src/platforms/accessory_manager.dart';
+import 'package:flutter_accessory_manager/src/platforms/accessory_manager_bluez.dart';
+import 'package:flutter_accessory_manager/src/platforms/external_accessory.dart';
 
 class FlutterAccessoryManager {
-  static final _channel = FlutterAccessoryPlatformChannel();
+  static final FlutterAccessoryManagerInterface _platform = _defaultPlatform();
 
-  static Function(EAAccessoryObject accessory)? accessoryConnected;
-  static Function(EAAccessoryObject accessory)? accessoryDisconnected;
-  static Function(BluetoothDevice device)? onDeviceDiscover;
-
-  /// Make sure to call setup once
-  static void setup() {
-    FlutterAccessoryCallbackChannel.setUp(_CallbackHandler(
-      accessoryConnectedCall: (EAAccessoryObject accessory) {
-        accessoryConnected?.call(accessory);
-      },
-      accessoryDisconnectedCall: (EAAccessoryObject accessory) {
-        accessoryDisconnected?.call(accessory);
-      },
-      deviceDiscover: (BluetoothDevice device) {
-        onDeviceDiscover?.call(device);
-      },
-    ));
+  static Future<void> showBluetoothAccessoryPicker({
+    List<String> withNames = const [],
+  }) {
+    return _platform.showBluetoothAccessoryPicker(withNames: withNames);
   }
-
-  static Future<void> showBluetoothAccessoryPicker() =>
-      _channel.showBluetoothAccessoryPicker();
 
   static Future<void> closeEaSession(String protocolString) =>
-      _channel.closeEaSession(protocolString);
+      _platform.closeEaSession(protocolString);
 
-  static Future<void> startScan() => _channel.startScan();
+  static Future<void> disconnect(String deviceId) =>
+      _platform.disconnect(deviceId);
 
-  static Future<void> stopScan() => _channel.stopScan();
+  static Future<void> startScan() => _platform.startScan();
 
-  static Future<bool> isScanning() => _channel.isScanning();
+  static Future<void> stopScan() => _platform.stopScan();
 
-  static Future<bool> pair(String address) => _channel.pair(address);
+  static Future<bool> isScanning() => _platform.isScanning();
+
+  static Future<bool> pair(String address) => _platform.pair(address);
 
   static Future<List<BluetoothDevice>> getPairedDevices() =>
-      _channel.getPairedDevices();
-}
+      _platform.getPairedDevices();
 
-class _CallbackHandler extends FlutterAccessoryCallbackChannel {
-  final Function(EAAccessoryObject accessory) accessoryConnectedCall;
-  final Function(EAAccessoryObject accessory) accessoryDisconnectedCall;
-  final Function(BluetoothDevice device) deviceDiscover;
-
-  _CallbackHandler({
-    required this.accessoryConnectedCall,
-    required this.accessoryDisconnectedCall,
-    required this.deviceDiscover,
-  });
-
-  @override
-  void accessoryConnected(EAAccessoryObject accessory) {
-    accessoryConnectedCall(accessory);
+  static set accessoryConnected(AccessoryCallback? accessory) {
+    FlutterAccessoryManagerInterface.accessoryConnected = accessory;
   }
 
-  @override
-  void accessoryDisconnected(EAAccessoryObject accessory) {
-    accessoryDisconnectedCall(accessory);
+  static set accessoryDisconnected(AccessoryCallback? accessory) {
+    FlutterAccessoryManagerInterface.accessoryDisconnected = accessory;
   }
 
-  @override
-  void onDeviceDiscover(BluetoothDevice device) {
-    deviceDiscover(device);
+  static set onBluetoothDeviceDiscover(OnDeviceDiscover? device) {
+    FlutterAccessoryManagerInterface.onBluetoothDeviceDiscover = device;
+  }
+
+  static FlutterAccessoryManagerInterface _defaultPlatform() {
+    if (kIsWeb) return _DefaultImpl();
+    if (defaultTargetPlatform == TargetPlatform.linux) {
+      return AccessoryManagerBluez.instance;
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return ExternalAccessory.instance;
+    } else {
+      return AccessoryManager.instance;
+    }
   }
 }
+
+class _DefaultImpl extends FlutterAccessoryManagerInterface {}

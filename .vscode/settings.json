@@ -89,13 +89,17 @@
     "regex": "cpp"
   },
   "cSpell.words": [
+    "BEGINSWITH",
+    "bredr",
     "bytevc",
     "hresult",
     "hstring",
     "Inspectable",
     "INVALIDARG",
+    "Rfcomm",
     "rohit",
     "rssi",
+    "Subpredicates",
     "winrt"
   ]
 }

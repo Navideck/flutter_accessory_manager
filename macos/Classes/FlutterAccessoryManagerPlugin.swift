@@ -8,7 +8,6 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     lazy var inquiry: IOBluetoothDeviceInquiry = .init(delegate: self)
     private var isInquiryStarted = false
     var devices = [String: IOBluetoothDevice]()
-    var pairDelegate: IOBluetoothPairingDelegate?
 
     // We initialize IOBluetoothPairingController in ObjC because in Swift no modal is shown
     // This also does not work on native apps
@@ -28,6 +27,7 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
 }
 
 extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
+  
     func startScan() throws {
         inquiry.updateNewDeviceNames = true
         inquiry.inquiryLength = 3
@@ -43,10 +43,14 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
     }
 
     func getPairedDevices() throws -> [BluetoothDevice] {
-        return inquiry.foundDevices().filter { ($0 as! IOBluetoothDevice).isPaired() }.map { ($0 as! IOBluetoothDevice).toBLuetoothDevice() }
+        guard let paired = IOBluetoothDevice.pairedDevices() else { return [] }
+        return paired.map { device -> [BluetoothDevice] in
+            guard let d = device as? IOBluetoothDevice else { return [] }
+            return [d.toBLuetoothDevice()]
+        }.flatMap { $0 }
     }
 
-    func showBluetoothAccessoryPicker(completion: @escaping (Result<Void, Error>) -> Void) {
+    func showBluetoothAccessoryPicker(withNames _: [String], completion: @escaping (Result<Void, any Error>) -> Void) {
         pairingController.performSelector(
             onMainThread: #selector(IOBluetoothPairingController.runModal),
             with: nil,
@@ -55,8 +59,8 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
         completion(.success(()))
     }
 
-    func closeEaSession(protocolString: String, completion: @escaping (Result<Void, any Error>) -> Void) {
-        guard let device = IOBluetoothDevice(addressString: protocolString) else {
+    func disconnect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
+        guard let device = IOBluetoothDevice(addressString: deviceId) else {
             completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
             return
         }
@@ -116,7 +120,6 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
 
     @objc public func deviceInquiryComplete(_: IOBluetoothDeviceInquiry!, error: IOReturn, aborted _: Bool) {
         isInquiryStarted = false
-        print("Device inquiry completed")
         if error != kIOReturnSuccess {
             print("Inquiry failed with error: \(error)")
         }
@@ -145,63 +148,6 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
             String(format: "%02X", address.data.5),
         ]
         return a.joined(separator: "-")
-    }
-}
-
-@objcMembers
-class IOBluetoothPairingDelegate: NSObject, IOBluetoothDevicePairDelegate {
-    var devicePair: IOBluetoothDevicePair?
-
-    init(devicePair: IOBluetoothDevicePair?) {
-        self.devicePair = devicePair
-        super.init()
-    }
-
-    public func devicePairingStarted(_: Any!) {
-        print("PairingStarted")
-    }
-
-    public func devicePairingConnecting(_: Any!) {
-        print("PairingConnecting")
-    }
-
-    public func devicePairingConnected(_: Any!) {
-        print("PairingConnected")
-    }
-
-    public func devicePairingUserConfirmationRequest(_: Any!, numericValue: BluetoothNumericValue) {
-        print("PairingUserConfirmationRequest (numericValue: \(numericValue))")
-        let alert = NSAlert()
-        alert.messageText = "PIN Verification"
-        alert.informativeText = "Passkey: \(numericValue)"
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "Confirm")
-        alert.addButton(withTitle: "Cancel")
-        let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
-            print("Confirm Pressed")
-            devicePair?.replyUserConfirmation(true)
-        } else if response == .alertSecondButtonReturn {
-            print("Cancel Pressed")
-            devicePair?.replyUserConfirmation(false)
-        }
-    }
-
-    public func devicePairingUserPasskeyNotification(_: Any!, passkey _: BluetoothPasskey) {
-        print("PairingUserPasskeyNotification")
-    }
-
-    public func devicePairingPINCodeRequest(_: Any!) {
-        print("PairingPINCodeRequest")
-    }
-
-    public func deviceSimplePairingComplete(_: Any!, status _: BluetoothHCIEventStatus) {
-        print("Simple Pairing Complete")
-    }
-
-    public func devicePairingFinished(_: Any!, error: IOReturn) {
-        let errorString = String(cString: mach_error_string(Int32(error)))
-        print("PairingFinished: \(error):  \(errorString)")
     }
 }
 
