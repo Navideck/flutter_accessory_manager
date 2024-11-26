@@ -53,7 +53,7 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
           effectiveProtocolString = protocolString
       } else {
           // Find first accessory and get its first protocol string
-          guard let firstAccessory = manager.connectedAccessories.first,
+          guard let firstAccessory = manager.connectedAccessories.last,
                 let firstProtocolString = firstAccessory.protocolStrings.first else {
               completion(.failure(SessionError.noProtocolStringsAvailable))
               return
@@ -88,8 +88,6 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
       DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
           session.inputStream?.close()
           session.outputStream?.close()
-          self?.eaSessionDisconnectionCompleterMap.removeValue(forKey: effectiveProtocolString)
-          completion(.success(()))
       }
   }
 
