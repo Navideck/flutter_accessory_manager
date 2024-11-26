@@ -14,7 +14,7 @@ class FlutterAccessoryManager {
     return _platform.showBluetoothAccessoryPicker(withNames: withNames);
   }
 
-  static Future<void> closeEaSession(String protocolString) =>
+  static Future<void> closeEaSession(String? protocolString) =>
       _platform.closeEaSession(protocolString);
 
   static Future<void> disconnect(String deviceId) =>

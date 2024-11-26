@@ -22,7 +22,7 @@ abstract class ExternalAccessoryChannel {
   );
 
   @async
-  void closeEaSession(String protocolString);
+  void closeEaSession(String? protocolString);
 }
 
 /// Native -> Flutter

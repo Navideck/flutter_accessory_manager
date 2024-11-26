@@ -19,7 +19,7 @@ class ExternalAccessory extends FlutterAccessoryManagerInterface {
   }
 
   @override
-  Future<void> closeEaSession(String protocolString) =>
+  Future<void> closeEaSession(String? protocolString) =>
       _channel.closeEaSession(protocolString);
 }
 
