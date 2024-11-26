@@ -85,7 +85,7 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
       eaSessionDisconnectionCompleterMap[effectiveProtocolString] = completion
       
       // Schedule session cleanup
-      DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
           session.inputStream?.close()
           session.outputStream?.close()
       }
