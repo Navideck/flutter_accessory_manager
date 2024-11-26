@@ -39,24 +39,58 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
     }
   }
 
-  func closeEaSession(protocolString: String, completion: @escaping (Result<Void, any Error>) -> Void) {
-    if eaSessionDisconnectionCompleterMap[protocolString] != nil {
-      completion(.failure(PigeonError(code: "AlreadyInProgress", message: "Operation already in progress", details: nil)))
-      return
-    }
-    let accessory = manager.connectedAccessories.first { acc in
-      acc.protocolStrings.contains(protocolString)
-    }
-    guard let accessory else {
-      completion(.failure(PigeonError(code: "NotFound", message: "Accessory not found", details: nil)))
-      return
-    }
-    var session: EASession? = EASession(accessory: accessory, forProtocol: protocolString)
-    print("EASession opened \(String(describing: session?.description))")
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-      session = nil
-    }
-    eaSessionDisconnectionCompleterMap[protocolString] = completion
+  func closeEaSession(protocolString: String? = nil, completion: @escaping (Result<Void, Error>) -> Void) {
+      enum SessionError: Error {
+          case alreadyInProgress
+          case accessoryNotFound
+          case sessionCreationFailed
+          case noProtocolStringsAvailable
+      }
+      
+      // Determine the protocol string to use
+      let effectiveProtocolString: String
+      if let protocolString = protocolString {
+          effectiveProtocolString = protocolString
+      } else {
+          // Find first accessory and get its first protocol string
+          guard let firstAccessory = manager.connectedAccessories.first,
+                let firstProtocolString = firstAccessory.protocolStrings.first else {
+              completion(.failure(SessionError.noProtocolStringsAvailable))
+              return
+          }
+          effectiveProtocolString = firstProtocolString
+      }
+      
+      // Guard against existing session
+      guard eaSessionDisconnectionCompleterMap[effectiveProtocolString] == nil else {
+          completion(.failure(SessionError.alreadyInProgress))
+          return
+      }
+      
+      // Find matching accessory
+      guard let accessory = manager.connectedAccessories.first(where: {
+          $0.protocolStrings.contains(effectiveProtocolString)
+      }) else {
+          completion(.failure(SessionError.accessoryNotFound))
+          return
+      }
+      
+      // Create and validate session
+      guard let session = EASession(accessory: accessory, forProtocol: effectiveProtocolString) else {
+          completion(.failure(SessionError.sessionCreationFailed))
+          return
+      }
+      
+      // Store completion handler
+      eaSessionDisconnectionCompleterMap[effectiveProtocolString] = completion
+      
+      // Schedule session cleanup
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+          session.inputStream?.close()
+          session.outputStream?.close()
+          self?.eaSessionDisconnectionCompleterMap.removeValue(forKey: effectiveProtocolString)
+          completion(.success(()))
+      }
   }
 
   @objc private func accessoryConnected(_ notification: NSNotification) {
