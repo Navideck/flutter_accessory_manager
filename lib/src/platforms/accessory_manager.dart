@@ -43,6 +43,5 @@ class _CallbackHandler extends FlutterAccessoryCallbackChannel {
   @override
   void onDeviceDiscover(BluetoothDevice device) {
     FlutterAccessoryManagerInterface.onBluetoothDeviceDiscover?.call(device);
-    (device);
   }
 }
