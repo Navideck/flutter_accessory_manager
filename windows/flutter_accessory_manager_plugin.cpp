@@ -228,6 +228,55 @@ namespace flutter_accessory_manager
                                                       { std::cout << "DeviceWatcherEvent: Stopped" << std::endl; });
   }
 
+  std::string parsePairingResultStatus(DevicePairingResultStatus status)
+  {
+    switch (status)
+    {
+    case DevicePairingResultStatus::Paired:
+      return "Paired";
+    case DevicePairingResultStatus::NotReadyToPair:
+      return "NotReadyToPair";
+    case DevicePairingResultStatus::NotPaired:
+      return "NotPaired";
+    case DevicePairingResultStatus::AlreadyPaired:
+      return "AlreadyPaired";
+    case DevicePairingResultStatus::ConnectionRejected:
+      return "ConnectionRejected";
+    case DevicePairingResultStatus::TooManyConnections:
+      return "TooManyConnections";
+    case DevicePairingResultStatus::HardwareFailure:
+      return "HardwareFailure";
+    case DevicePairingResultStatus::AuthenticationTimeout:
+      return "AuthenticationTimeout";
+    case DevicePairingResultStatus::AuthenticationNotAllowed:
+      return "AuthenticationNotAllowed";
+    case DevicePairingResultStatus::AuthenticationFailure:
+      return "AuthenticationFailure";
+    case DevicePairingResultStatus::NoSupportedProfiles:
+      return "NoSupportedProfiles";
+    case DevicePairingResultStatus::ProtectionLevelCouldNotBeMet:
+      return "ProtectionLevelCouldNotBeMet";
+    case DevicePairingResultStatus::AccessDenied:
+      return "AccessDenied";
+    case DevicePairingResultStatus::InvalidCeremonyData:
+      return "InvalidCeremonyData";
+    case DevicePairingResultStatus::PairingCanceled:
+      return "PairingCanceled";
+    case DevicePairingResultStatus::OperationAlreadyInProgress:
+      return "OperationAlreadyInProgress";
+    case DevicePairingResultStatus::RequiredHandlerNotRegistered:
+      return "RequiredHandlerNotRegistered";
+    case DevicePairingResultStatus::RejectedByHandler:
+      return "RejectedByHandler";
+    case DevicePairingResultStatus::RemoteDeviceHasAssociation:
+      return "RemoteDeviceHasAssociation";
+    case DevicePairingResultStatus::Failed:
+      return "Failed";
+    default:
+      return "UnknownStatus";
+    }
+  }
+
   winrt::fire_and_forget FlutterAccessoryManagerPlugin::ShowDevicePicker(std::function<void(std::optional<FlutterError> reply)> result)
   {
     DevicePicker picker = DevicePicker();
@@ -240,6 +289,7 @@ namespace flutter_accessory_manager
     }
     // TODO:Probably This will not work fine on Windows 10
     auto pairResult = co_await selectedDevice.Pairing().PairAsync();
+    std::cout << "PairLog: Received pairing status" << parsePairingResultStatus(pairResult.Status()) << std::endl;
     bool isPaired = pairResult.Status() == Enumeration::DevicePairingResultStatus::Paired;
     if (!isPaired)
     {
@@ -262,12 +312,12 @@ namespace flutter_accessory_manager
       if (deviceInformation.Pairing().IsPaired())
         result(true);
       else if (!deviceInformation.Pairing().CanPair())
-        result(FlutterError("Device is not parable"));
+        result(FlutterError("Device is not pairable"));
       else
       {
         // TODO:Probably This will not work fine on Windows 10
         auto pairResult = co_await deviceInformation.Pairing().PairAsync();
-        std::cout << "PairLog: Received pairing status" << std::endl;
+        std::cout << "PairLog: Received pairing status" << parsePairingResultStatus(pairResult.Status()) << std::endl;
         bool isPaired = pairResult.Status() == Enumeration::DevicePairingResultStatus::Paired;
         result(isPaired);
       }
