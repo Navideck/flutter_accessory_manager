@@ -126,6 +126,7 @@ class _MyAppState extends State<MyApp> {
               PlatformButton(
                 onPressed: () async {
                   try {
+                    print("Opening Picker");
                     await FlutterAccessoryManager
                         .showBluetoothAccessoryPicker();
                     print("showed BluetoothAccessoryPicker");

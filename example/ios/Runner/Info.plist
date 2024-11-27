@@ -52,9 +52,5 @@
     </array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
     <string>message</string>
-	<key>UISupportedExternalAccessoryProtocols</key>
-    <array>
-      <string>com.nikon.psg-0100</string>
-    </array>
 </dict>
 </plist>
