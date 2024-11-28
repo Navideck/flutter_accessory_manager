@@ -17,6 +17,9 @@
 #include <memory>
 #include "ui_thread_handler.hpp"
 
+#define STATUS_SUCCESS (0x00000000)
+typedef NTSTATUS(WINAPI *RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+
 namespace flutter_accessory_manager
 {
     using namespace winrt;
@@ -63,14 +66,16 @@ namespace flutter_accessory_manager
         BluetoothDevice DeviceInfoToBluetoothDevice(DeviceInformation deviceInfo);
         winrt::fire_and_forget ShowDevicePicker(std::function<void(std::optional<FlutterError> reply)> result);
         winrt::fire_and_forget PairAsync(const std::string &address, std::function<void(ErrorOr<bool> reply)> result);
+        winrt::fire_and_forget CustomPairAsync(const std::string &address, std::function<void(ErrorOr<bool> reply)> result);
+        void PairingRequestedHandler(DeviceInformationCustomPairing sender, DevicePairingRequestedEventArgs eventArgs);
         winrt::fire_and_forget DisconnectAsync(const std::string &device_id, std::function<void(std::optional<FlutterError> reply)> result);
 
         // Channel
         void ShowBluetoothAccessoryPicker(
-            const flutter::EncodableList& with_names,
+            const flutter::EncodableList &with_names,
             std::function<void(std::optional<FlutterError> reply)> result);
         void Disconnect(
-            const std::string& device_id,
+            const std::string &device_id,
             std::function<void(std::optional<FlutterError> reply)> result);
         std::optional<FlutterError> StartScan();
         std::optional<FlutterError> StopScan();
@@ -113,7 +118,7 @@ namespace flutter_accessory_manager
             return deviceIdString;
         }
 
-        uint64_t str_to_mac_address(std::string mac_str)
+            uint64_t str_to_mac_address(std::string mac_str)
         {
             // TODO: Validate input - Expected Format: XX:XX:XX:XX:XX:XX
             uint64_t mac_address_number = 0;
@@ -121,6 +126,34 @@ namespace flutter_accessory_manager
             sscanf_s(mac_str.c_str(), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx", &mac_ptr[5], &mac_ptr[4], &mac_ptr[3],
                      &mac_ptr[2], &mac_ptr[1], &mac_ptr[0]);
             return mac_address_number;
+        }
+
+        bool isWindows11OrGreater()
+        {
+            HMODULE hMod = ::GetModuleHandleW(L"ntdll.dll");
+            if (!hMod)
+            {
+                std::cout << "Failed to get ntdll" << std::endl;
+                return false;
+            }
+
+            RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)::GetProcAddress(hMod, "RtlGetVersion");
+            if (fxPtr == nullptr)
+            {
+                std::cout << "Failed to get RtlGetVersionPtr" << std::endl;
+                return false;
+            }
+
+            RTL_OSVERSIONINFOW rove = {0};
+            rove.dwOSVersionInfoSize = sizeof(rove);
+            if (STATUS_SUCCESS != fxPtr(&rove))
+            {
+                std::cout << "Failed to get RTL_OSVERSIONINFOW" << std::endl;
+                return false;
+            }
+
+            // Windows 11 => MajorVersion = 10 and BuildNumber >= 22000
+            return rove.dwMajorVersion == 10 && rove.dwBuildNumber >= 22000;
         }
 
         std::string DeviceWatcherStatusToString(DeviceWatcherStatus result)
@@ -141,6 +174,55 @@ namespace flutter_accessory_manager
                 return "Stopping";
             }
             return "";
+        }
+
+        std::string parsePairingResultStatus(DevicePairingResultStatus status)
+        {
+            switch (status)
+            {
+            case DevicePairingResultStatus::Paired:
+                return "Paired";
+            case DevicePairingResultStatus::NotReadyToPair:
+                return "NotReadyToPair";
+            case DevicePairingResultStatus::NotPaired:
+                return "NotPaired";
+            case DevicePairingResultStatus::AlreadyPaired:
+                return "AlreadyPaired";
+            case DevicePairingResultStatus::ConnectionRejected:
+                return "ConnectionRejected";
+            case DevicePairingResultStatus::TooManyConnections:
+                return "TooManyConnections";
+            case DevicePairingResultStatus::HardwareFailure:
+                return "HardwareFailure";
+            case DevicePairingResultStatus::AuthenticationTimeout:
+                return "AuthenticationTimeout";
+            case DevicePairingResultStatus::AuthenticationNotAllowed:
+                return "AuthenticationNotAllowed";
+            case DevicePairingResultStatus::AuthenticationFailure:
+                return "AuthenticationFailure";
+            case DevicePairingResultStatus::NoSupportedProfiles:
+                return "NoSupportedProfiles";
+            case DevicePairingResultStatus::ProtectionLevelCouldNotBeMet:
+                return "ProtectionLevelCouldNotBeMet";
+            case DevicePairingResultStatus::AccessDenied:
+                return "AccessDenied";
+            case DevicePairingResultStatus::InvalidCeremonyData:
+                return "InvalidCeremonyData";
+            case DevicePairingResultStatus::PairingCanceled:
+                return "PairingCanceled";
+            case DevicePairingResultStatus::OperationAlreadyInProgress:
+                return "OperationAlreadyInProgress";
+            case DevicePairingResultStatus::RequiredHandlerNotRegistered:
+                return "RequiredHandlerNotRegistered";
+            case DevicePairingResultStatus::RejectedByHandler:
+                return "RejectedByHandler";
+            case DevicePairingResultStatus::RemoteDeviceHasAssociation:
+                return "RemoteDeviceHasAssociation";
+            case DevicePairingResultStatus::Failed:
+                return "Failed";
+            default:
+                return "UnknownStatus";
+            }
         }
     };
 
