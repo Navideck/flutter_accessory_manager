@@ -118,7 +118,7 @@ namespace flutter_accessory_manager
             return deviceIdString;
         }
 
-            uint64_t str_to_mac_address(std::string mac_str)
+        uint64_t str_to_mac_address(std::string mac_str)
         {
             // TODO: Validate input - Expected Format: XX:XX:XX:XX:XX:XX
             uint64_t mac_address_number = 0;
