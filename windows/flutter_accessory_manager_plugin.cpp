@@ -172,11 +172,13 @@ namespace flutter_accessory_manager
       return;
 
     // Filter Paired or Unpaired Devices
-    auto selector = L"(" +
-                    Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) +
-                    L") OR (" +
-                    Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
-                    L")";
+    // auto selector = L"(" +
+    //                 Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) +
+    //                 L") OR (" +
+    //                 Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
+    //                 L")";
+
+    auto selector = Bluetooth::BluetoothDevice::GetDeviceSelector();
 
     deviceWatcher = DeviceInformation::CreateWatcher(
         selector,
