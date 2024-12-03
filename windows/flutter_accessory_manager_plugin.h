@@ -16,6 +16,9 @@
 
 #include <memory>
 #include "ui_thread_handler.hpp"
+#include <iostream>
+#include <regex>
+#include <string>
 
 namespace flutter_accessory_manager
 {
@@ -67,10 +70,10 @@ namespace flutter_accessory_manager
 
         // Channel
         void ShowBluetoothAccessoryPicker(
-            const flutter::EncodableList& with_names,
+            const flutter::EncodableList &with_names,
             std::function<void(std::optional<FlutterError> reply)> result);
         void Disconnect(
-            const std::string& device_id,
+            const std::string &device_id,
             std::function<void(std::optional<FlutterError> reply)> result);
         std::optional<FlutterError> StartScan();
         std::optional<FlutterError> StopScan();
@@ -111,6 +114,25 @@ namespace flutter_accessory_manager
                 return deviceIdString.substr(pos + 1);
             }
             return deviceIdString;
+        }
+
+        bool isBluetoothClassic(hstring clientId)
+        {
+            std::wstring infoIdWstr = clientId.c_str();
+            std::wregex pattern(LR"((^\w+)#(Bluetooth|BluetoothLE)((?:..:){5}..)-((?:..:){5}..)$)");
+            std::wsmatch match;
+            if (std::regex_match(infoIdWstr, match, pattern))
+            {
+                // "Bluetooth" or "BluetoothLE"
+                std::wstring type = match[2].str();
+                return type == L"Bluetooth";
+                // std::wstring adapterMac = match[3].str(); // Adapter MAC
+                // std::wstring deviceMac = match[4].str();  // Device MAC
+                // std::wcout << L"Type: " << type << std::endl;
+                // std::wcout << L"Adapter MAC: " << adapterMac << std::endl;
+                // std::wcout << L"Device MAC: " << deviceMac << std::endl;
+            }
+            return false;
         }
 
         uint64_t str_to_mac_address(std::string mac_str)

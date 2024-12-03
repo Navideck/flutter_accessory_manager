@@ -171,14 +171,21 @@ namespace flutter_accessory_manager
     if (deviceWatcher != nullptr)
       return;
 
-    // Filter Paired or Unpaired Devices
+    // Filter Paired or Unpaired Classic+Ble Devices
+    auto selector = L"((" + Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
+                    L") OR (" +
+                    Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
+                    L")) OR ((" +
+                    Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) +
+                    L") OR (" +
+                    Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) + L"))";
+
+    // Filter Paired or Unpaired Classic Devices
     // auto selector = L"(" +
     //                 Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) +
     //                 L") OR (" +
     //                 Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
     //                 L")";
-
-    auto selector = Bluetooth::BluetoothDevice::GetDeviceSelector();
 
     deviceWatcher = DeviceInformation::CreateWatcher(
         selector,
@@ -190,15 +197,19 @@ namespace flutter_accessory_manager
             isConnectableKey,
             signalStrengthKey,
         },
-        DeviceInformationKind::Device);
+        DeviceInformationKind::AssociationEndpoint);
 
     deviceWatcherAddedToken = deviceWatcher.Added([this](DeviceWatcher sender, DeviceInformation deviceInfo)
                                                   {
-                                                    std::string deviceId = winrt::to_string(deviceInfo.Id());
-                                                    deviceWatcherDevices.insert_or_assign(deviceId, deviceInfo);
-                                                    auto device = DeviceInfoToBluetoothDevice(deviceInfo);
-                                                    uiThreadHandler_.Post([device]
-                                                                          { callbackChannel->OnDeviceDiscover(device, SuccessCallback, ErrorCallback); });
+                                                    auto deviceInfoId = deviceInfo.Id();
+                                                    std::string deviceId = winrt::to_string(deviceInfoId);
+                                                    if (isBluetoothClassic(deviceInfoId))
+                                                    {
+                                                      deviceWatcherDevices.insert_or_assign(deviceId, deviceInfo);
+                                                      auto device = DeviceInfoToBluetoothDevice(deviceInfo);
+                                                      uiThreadHandler_.Post([device]
+                                                                            { callbackChannel->OnDeviceDiscover(device, SuccessCallback, ErrorCallback); });
+                                                    }
                                                     // On Device Added
                                                   });
 
@@ -220,6 +231,7 @@ namespace flutter_accessory_manager
                                                       {
                                                         std::string deviceId = winrt::to_string(args.Id());
                                                         deviceWatcherDevices.erase(deviceId);
+                                                        std::cout << "DeviceRemoved: " << deviceId << std::endl;
                                                         // On Device Removed
                                                       });
 
