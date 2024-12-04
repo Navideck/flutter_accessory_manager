@@ -35,8 +35,7 @@ class _MyAppState extends State<MyApp> {
       print("Accessory Disconnected ${accessory.name}");
     };
 
-    FlutterAccessoryManager.onBluetoothDeviceDiscover =
-        (BluetoothDevice device) {
+    FlutterAccessoryManager.onBluetoothDeviceDiscover = (device) {
       print("Device Discover ${device.name} ${device.address}");
       int index = devices.indexWhere((e) => e.address == device.address);
       if (index == -1) {
@@ -44,6 +43,12 @@ class _MyAppState extends State<MyApp> {
       } else {
         devices[index] = device;
       }
+      setState(() {});
+    };
+
+    FlutterAccessoryManager.onBluetoothDeviceRemoved = (device) {
+      print("Device Removed ${device.name} ${device.address}");
+      devices.removeWhere((e) => e.address == device.address);
       setState(() {});
     };
 

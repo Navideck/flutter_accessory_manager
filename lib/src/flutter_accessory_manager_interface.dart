@@ -4,7 +4,8 @@ import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manage
 abstract class FlutterAccessoryManagerInterface {
   static AccessoryCallback? accessoryConnected;
   static AccessoryCallback? accessoryDisconnected;
-  static OnDeviceDiscover? onBluetoothDeviceDiscover;
+  static BluetoothDeviceCallback? onBluetoothDeviceDiscover;
+  static BluetoothDeviceCallback? onBluetoothDeviceRemoved;
 
   Future<void> showBluetoothAccessoryPicker({
     List<String>? withNames,
@@ -43,4 +44,4 @@ abstract class FlutterAccessoryManagerInterface {
 
 typedef AccessoryCallback = void Function(EAAccessory accessory);
 
-typedef OnDeviceDiscover = void Function(BluetoothDevice device);
+typedef BluetoothDeviceCallback = void Function(BluetoothDevice device);

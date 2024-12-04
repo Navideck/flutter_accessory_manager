@@ -62,6 +62,7 @@ namespace flutter_accessory_manager
       {
         deviceWatcher.Start();
       }
+      restartEnumeration = true;
     }
     catch (const winrt::hresult_error &err)
     {
@@ -82,6 +83,7 @@ namespace flutter_accessory_manager
   {
     try
     {
+      restartEnumeration = false;
       if (deviceWatcher != nullptr)
       {
         auto status = deviceWatcher.Status();
@@ -172,6 +174,7 @@ namespace flutter_accessory_manager
       return;
 
     // Filter Paired or Unpaired Classic+Ble Devices
+    // using Ble filter as well to increase enumeration time
     auto selector = L"((" + Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
                     L") OR (" +
                     Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
@@ -179,13 +182,6 @@ namespace flutter_accessory_manager
                     Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) +
                     L") OR (" +
                     Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) + L"))";
-
-    // Filter Paired or Unpaired Classic Devices
-    // auto selector = L"(" +
-    //                 Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) +
-    //                 L") OR (" +
-    //                 Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
-    //                 L")";
 
     deviceWatcher = DeviceInformation::CreateWatcher(
         selector,
@@ -230,16 +226,33 @@ namespace flutter_accessory_manager
     deviceWatcherRemovedToken = deviceWatcher.Removed([this](DeviceWatcher sender, DeviceInformationUpdate args)
                                                       {
                                                         std::string deviceId = winrt::to_string(args.Id());
-                                                        deviceWatcherDevices.erase(deviceId);
-                                                        std::cout << "DeviceRemoved: " << deviceId << std::endl;
+                                                        auto it = deviceWatcherDevices.find(deviceId);
+                                                        if (it != deviceWatcherDevices.end())
+                                                        {
+                                                          auto device = DeviceInfoToBluetoothDevice(it->second);
+                                                          uiThreadHandler_.Post([device]
+                                                                                { callbackChannel->OnDeviceRemoved(device, SuccessCallback, ErrorCallback); });
+                                                          deviceWatcherDevices.erase(deviceId);
+                                                        }
+
                                                         // On Device Removed
                                                       });
 
     deviceWatcherEnumerationCompletedToken = deviceWatcher.EnumerationCompleted([this](DeviceWatcher sender, IInspectable args)
-                                                                                { std::cout << "DeviceWatcherEvent: EnumerationCompleted" << std::endl; });
+                                                                                {
+                                                                                  std::cout << "DeviceWatcherEvent: EnumerationCompleted, Restart: " << restartEnumeration << std::endl;
+                                                                                  // Enumeration Completed, restart scan if needed
+                                                                                  if(restartEnumeration){
+                                                                                    // Stop and Start Scan Again
+                                                                                    StopScan();
+                                                                                    StartScan();
+                                                                                  } });
 
     deviceWatcherStoppedToken = deviceWatcher.Stopped([this](DeviceWatcher sender, IInspectable args)
-                                                      { std::cout << "DeviceWatcherEvent: Stopped" << std::endl; });
+                                                      {
+                                                        std::cout << "DeviceWatcherEvent: Stopped" << std::endl;
+                                                        // DeviceWatcher Stopped
+                                                      });
   }
 
   std::string parsePairingResultStatus(DevicePairingResultStatus status)

@@ -33,16 +33,20 @@ class FlutterAccessoryManager {
   static Future<List<BluetoothDevice>> getPairedDevices() =>
       _platform.getPairedDevices();
 
-  static set accessoryConnected(AccessoryCallback? accessory) {
-    FlutterAccessoryManagerInterface.accessoryConnected = accessory;
+  static set accessoryConnected(AccessoryCallback? callback) {
+    FlutterAccessoryManagerInterface.accessoryConnected = callback;
   }
 
-  static set accessoryDisconnected(AccessoryCallback? accessory) {
-    FlutterAccessoryManagerInterface.accessoryDisconnected = accessory;
+  static set accessoryDisconnected(AccessoryCallback? callback) {
+    FlutterAccessoryManagerInterface.accessoryDisconnected = callback;
   }
 
-  static set onBluetoothDeviceDiscover(OnDeviceDiscover? device) {
-    FlutterAccessoryManagerInterface.onBluetoothDeviceDiscover = device;
+  static set onBluetoothDeviceDiscover(BluetoothDeviceCallback? callback) {
+    FlutterAccessoryManagerInterface.onBluetoothDeviceDiscover = callback;
+  }
+
+  static set onBluetoothDeviceRemoved(BluetoothDeviceCallback? callback) {
+    FlutterAccessoryManagerInterface.onBluetoothDeviceRemoved = callback;
   }
 
   static FlutterAccessoryManagerInterface _defaultPlatform() {

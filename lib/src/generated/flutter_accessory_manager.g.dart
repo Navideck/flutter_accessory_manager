@@ -278,6 +278,8 @@ abstract class FlutterAccessoryCallbackChannel {
 
   void onDeviceDiscover(BluetoothDevice device);
 
+  void onDeviceRemoved(BluetoothDevice device);
+
   static void setUp(FlutterAccessoryCallbackChannel? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
     {
@@ -296,6 +298,31 @@ abstract class FlutterAccessoryCallbackChannel {
               'Argument for dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceDiscover was null, expected non-null BluetoothDevice.');
           try {
             api.onDeviceDiscover(arg_device!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceRemoved$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceRemoved was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final BluetoothDevice? arg_device = (args[0] as BluetoothDevice?);
+          assert(arg_device != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryCallbackChannel.onDeviceRemoved was null, expected non-null BluetoothDevice.');
+          try {
+            api.onDeviceRemoved(arg_device!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

@@ -55,6 +55,7 @@ namespace flutter_accessory_manager
 
         UiThreadHandler uiThreadHandler_;
         DeviceWatcher deviceWatcher{nullptr};
+        bool restartEnumeration = false;
         winrt::event_token deviceWatcherAddedToken;
         winrt::event_token deviceWatcherUpdatedToken;
         winrt::event_token deviceWatcherRemovedToken;

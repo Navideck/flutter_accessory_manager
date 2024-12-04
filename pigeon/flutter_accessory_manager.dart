@@ -47,6 +47,8 @@ abstract class FlutterAccessoryPlatformChannel {
 @FlutterApi()
 abstract class FlutterAccessoryCallbackChannel {
   void onDeviceDiscover(BluetoothDevice device);
+
+  void onDeviceRemoved(BluetoothDevice device);
 }
 
 class BluetoothDevice {
