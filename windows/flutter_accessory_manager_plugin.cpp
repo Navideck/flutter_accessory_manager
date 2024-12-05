@@ -353,7 +353,13 @@ namespace flutter_accessory_manager
         std::cout << "PairLog: Trying to pair" << std::endl;
         DevicePairingProtectionLevel protectionLevel = deviceInformation.Pairing().ProtectionLevel();
         // DevicePairingKinds => None, ConfirmOnly, DisplayPin, ProvidePin, ConfirmPinMatch, ProvidePasswordCredential
-        auto pairResult = co_await customPairing.PairAsync(DevicePairingKinds::ConfirmOnly | DevicePairingKinds::ProvidePin, protectionLevel);
+        auto pairResult = co_await customPairing.PairAsync(
+            DevicePairingKinds::ConfirmOnly |
+                DevicePairingKinds::DisplayPin |
+                DevicePairingKinds::ProvidePin |
+                DevicePairingKinds::ConfirmPinMatch,
+            // | DevicePairingKinds::ProvidePasswordCredential,
+            protectionLevel);
         std::cout << "PairLog: Got Pair Result" << std::endl;
         DevicePairingResultStatus status = pairResult.Status();
         customPairing.PairingRequested(token);
@@ -379,16 +385,27 @@ namespace flutter_accessory_manager
   {
     std::cout << "PairLog: Got PairingRequest" << std::endl;
     DevicePairingKinds kind = eventArgs.PairingKind();
-    if (kind != DevicePairingKinds::ProvidePin)
+    if (kind == DevicePairingKinds::ProvidePin)
     {
-      eventArgs.Accept();
-      return;
+      std::cout << "PairLog: Trying to get pin from user" << std::endl;
+      hstring pin = askForPairingPin();
+      std::wcout << "PairLog: Got Pin: " << pin.c_str() << std::endl;
+      eventArgs.Accept(pin);
     }
-
-    std::cout << "PairLog: Trying to get pin from user" << std::endl;
-    hstring pin = askForPairingPin();
-    std::wcout << "PairLog: Got Pin: " << pin.c_str() << std::endl;
-    eventArgs.Accept(pin);
+    else
+    {
+      hstring pin = eventArgs.Pin();
+      if (!pin.empty())
+      {
+        std::cout << "PairLog: Accepting pair with pin: " << winrt::to_string(pin) << std::endl;
+        eventArgs.Accept(pin);
+      }
+      else
+      {
+        std::cout << "PairLog: Accepting pair without pin" << std::endl;
+        eventArgs.Accept();
+      }
+    }
   }
 
   winrt::fire_and_forget FlutterAccessoryManagerPlugin::DisconnectAsync(const std::string &device_id, std::function<void(std::optional<FlutterError> reply)> result)
