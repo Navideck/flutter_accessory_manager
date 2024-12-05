@@ -177,11 +177,11 @@ namespace flutter_accessory_manager
     // using Ble filter as well to increase enumeration time
     auto selector = L"((" + Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
                     L") OR (" +
-                    Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(true) +
+                    Bluetooth::BluetoothLEDevice::GetDeviceSelectorFromPairingState(true) +
                     L")) OR ((" +
                     Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) +
                     L") OR (" +
-                    Bluetooth::BluetoothDevice::GetDeviceSelectorFromPairingState(false) + L"))";
+                    Bluetooth::BluetoothLEDevice::GetDeviceSelectorFromPairingState(false) + L"))";
 
     deviceWatcher = DeviceInformation::CreateWatcher(
         selector,
