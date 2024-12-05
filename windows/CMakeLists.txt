@@ -37,6 +37,7 @@ list(APPEND PLUGIN_SOURCES
   "flutter_accessory_manager_plugin.cpp"
   "flutter_accessory_manager_plugin.h"
   "ui_thread_handler.hpp"
+  "pin_entry.h"
 )
 
 add_library(${PLUGIN_NAME} SHARED

@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <sstream>
+#include "pin_entry.h"
 
 namespace flutter_accessory_manager
 {
@@ -164,7 +165,21 @@ namespace flutter_accessory_manager
       const std::string &address,
       std::function<void(ErrorOr<bool> reply)> result)
   {
-    PairAsync(address, result);
+    try
+    {
+      if (isWindows11OrGreater())
+      {
+        PairAsync(address, result);
+      }
+      else
+      {
+        CustomPairAsync(address, result);
+      }
+    }
+    catch (const FlutterError &err)
+    {
+      result(err);
+    }
   }
 
   // Helper methods
@@ -255,55 +270,6 @@ namespace flutter_accessory_manager
                                                       });
   }
 
-  std::string parsePairingResultStatus(DevicePairingResultStatus status)
-  {
-    switch (status)
-    {
-    case DevicePairingResultStatus::Paired:
-      return "Paired";
-    case DevicePairingResultStatus::NotReadyToPair:
-      return "NotReadyToPair";
-    case DevicePairingResultStatus::NotPaired:
-      return "NotPaired";
-    case DevicePairingResultStatus::AlreadyPaired:
-      return "AlreadyPaired";
-    case DevicePairingResultStatus::ConnectionRejected:
-      return "ConnectionRejected";
-    case DevicePairingResultStatus::TooManyConnections:
-      return "TooManyConnections";
-    case DevicePairingResultStatus::HardwareFailure:
-      return "HardwareFailure";
-    case DevicePairingResultStatus::AuthenticationTimeout:
-      return "AuthenticationTimeout";
-    case DevicePairingResultStatus::AuthenticationNotAllowed:
-      return "AuthenticationNotAllowed";
-    case DevicePairingResultStatus::AuthenticationFailure:
-      return "AuthenticationFailure";
-    case DevicePairingResultStatus::NoSupportedProfiles:
-      return "NoSupportedProfiles";
-    case DevicePairingResultStatus::ProtectionLevelCouldNotBeMet:
-      return "ProtectionLevelCouldNotBeMet";
-    case DevicePairingResultStatus::AccessDenied:
-      return "AccessDenied";
-    case DevicePairingResultStatus::InvalidCeremonyData:
-      return "InvalidCeremonyData";
-    case DevicePairingResultStatus::PairingCanceled:
-      return "PairingCanceled";
-    case DevicePairingResultStatus::OperationAlreadyInProgress:
-      return "OperationAlreadyInProgress";
-    case DevicePairingResultStatus::RequiredHandlerNotRegistered:
-      return "RequiredHandlerNotRegistered";
-    case DevicePairingResultStatus::RejectedByHandler:
-      return "RejectedByHandler";
-    case DevicePairingResultStatus::RemoteDeviceHasAssociation:
-      return "RemoteDeviceHasAssociation";
-    case DevicePairingResultStatus::Failed:
-      return "Failed";
-    default:
-      return "UnknownStatus";
-    }
-  }
-
   winrt::fire_and_forget FlutterAccessoryManagerPlugin::ShowDevicePicker(std::function<void(std::optional<FlutterError> reply)> result)
   {
     DevicePicker picker = DevicePicker();
@@ -314,21 +280,61 @@ namespace flutter_accessory_manager
       result(FlutterError("No device selected"));
       co_return;
     }
-    // TODO:Probably This will not work fine on Windows 10
-    auto pairResult = co_await selectedDevice.Pairing().PairAsync();
-    std::cout << "PairLog: Received pairing status" << parsePairingResultStatus(pairResult.Status()) << std::endl;
-    bool isPaired = pairResult.Status() == Enumeration::DevicePairingResultStatus::Paired;
-    if (!isPaired)
+
+    std::function<void(ErrorOr<bool> reply)> pairCallback = [result](ErrorOr<bool> reply)
     {
-      result(FlutterError("Pairing Failed"));
+      std::cout << "Received PairReply " << std::endl;
+      if (reply.has_error() || !reply.value())
+      {
+        result(FlutterError("Pairing Failed"));
+      }
+      else
+      {
+        result(std::nullopt);
+      }
+    };
+
+    auto address = ParseBluetoothClientId(selectedDevice.Id());
+    std::cout << "Selected device " << address << " Pairing.." << std::endl;
+    Pair(address, pairCallback);
+  }
+
+  winrt::fire_and_forget FlutterAccessoryManagerPlugin::PairAsync(const std::string &address, std::function<void(ErrorOr<bool> reply)> result)
+  {
+    try
+    {
+      auto device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(address));
+      auto deviceInformation = device.DeviceInformation();
+      if (deviceInformation.Pairing().IsPaired())
+      {
+        result(true);
+      }
+      else if (!deviceInformation.Pairing().CanPair())
+      {
+        result(FlutterError("Device is not pairable"));
+      }
+      else
+      {
+        auto pairResult = co_await deviceInformation.Pairing().PairAsync();
+        std::cout << "PairLog: Received pairing status" << parsePairingResultStatus(pairResult.Status()) << std::endl;
+        bool isPaired = pairResult.Status() == Enumeration::DevicePairingResultStatus::Paired;
+        result(isPaired);
+      }
     }
-    else
+    catch (const winrt::hresult_error &err)
     {
-      result(std::nullopt);
+      int errorCode = err.code();
+      std::cout << "PairLog: Failed:  " << winrt::to_string(err.message()) << " ErrorCode: " << std::to_string(errorCode) << std::endl;
+      result(FlutterError(std::to_string(errorCode), winrt::to_string(err.message())));
+    }
+    catch (...)
+    {
+      result(false);
+      std::cout << "PairLog: Unknown error" << std::endl;
     }
   }
 
-  winrt::fire_and_forget FlutterAccessoryManagerPlugin::PairAsync(
+  winrt::fire_and_forget FlutterAccessoryManagerPlugin::CustomPairAsync(
       const std::string &address,
       std::function<void(ErrorOr<bool> reply)> result)
   {
@@ -342,18 +348,47 @@ namespace flutter_accessory_manager
         result(FlutterError("Device is not pairable"));
       else
       {
-        // TODO:Probably This will not work fine on Windows 10
-        auto pairResult = co_await deviceInformation.Pairing().PairAsync();
+        auto customPairing = deviceInformation.Pairing().Custom();
+        winrt::event_token token = customPairing.PairingRequested({this, &FlutterAccessoryManagerPlugin::PairingRequestedHandler});
+        std::cout << "PairLog: Trying to pair" << std::endl;
+        DevicePairingProtectionLevel protectionLevel = deviceInformation.Pairing().ProtectionLevel();
+        // DevicePairingKinds => None, ConfirmOnly, DisplayPin, ProvidePin, ConfirmPinMatch, ProvidePasswordCredential
+        auto pairResult = co_await customPairing.PairAsync(DevicePairingKinds::ConfirmOnly | DevicePairingKinds::ProvidePin, protectionLevel);
+        std::cout << "PairLog: Got Pair Result" << std::endl;
+        DevicePairingResultStatus status = pairResult.Status();
+        customPairing.PairingRequested(token);
         std::cout << "PairLog: Received pairing status" << parsePairingResultStatus(pairResult.Status()) << std::endl;
-        bool isPaired = pairResult.Status() == Enumeration::DevicePairingResultStatus::Paired;
+        bool isPaired = status == Enumeration::DevicePairingResultStatus::Paired;
         result(isPaired);
       }
+    }
+    catch (const winrt::hresult_error &err)
+    {
+      int errorCode = err.code();
+      std::cout << "PairLog: Failed:  " << winrt::to_string(err.message()) << " ErrorCode: " << std::to_string(errorCode) << std::endl;
+      result(FlutterError(std::to_string(errorCode), winrt::to_string(err.message())));
     }
     catch (...)
     {
       result(false);
       std::cout << "PairLog: Unknown error" << std::endl;
     }
+  }
+
+  void FlutterAccessoryManagerPlugin::PairingRequestedHandler(DeviceInformationCustomPairing sender, DevicePairingRequestedEventArgs eventArgs)
+  {
+    std::cout << "PairLog: Got PairingRequest" << std::endl;
+    DevicePairingKinds kind = eventArgs.PairingKind();
+    if (kind != DevicePairingKinds::ProvidePin)
+    {
+      eventArgs.Accept();
+      return;
+    }
+
+    std::cout << "PairLog: Trying to get pin from user" << std::endl;
+    hstring pin = askForPairingPin();
+    std::wcout << "PairLog: Got Pin: " << pin.c_str() << std::endl;
+    eventArgs.Accept(pin);
   }
 
   winrt::fire_and_forget FlutterAccessoryManagerPlugin::DisconnectAsync(const std::string &device_id, std::function<void(std::optional<FlutterError> reply)> result)
