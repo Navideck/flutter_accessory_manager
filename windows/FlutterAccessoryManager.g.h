@@ -174,6 +174,10 @@ class FlutterAccessoryCallbackChannel {
     const BluetoothDevice& device,
     std::function<void(void)>&& on_success,
     std::function<void(const FlutterError&)>&& on_error);
+  void OnDeviceRemoved(
+    const BluetoothDevice& device,
+    std::function<void(void)>&& on_success,
+    std::function<void(const FlutterError&)>&& on_error);
 
  private:
   flutter::BinaryMessenger* binary_messenger_;

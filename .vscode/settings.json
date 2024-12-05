@@ -90,6 +90,7 @@
   },
   "cSpell.words": [
     "BEGINSWITH",
+    "bluez",
     "bredr",
     "bytevc",
     "hresult",
@@ -100,6 +101,7 @@
     "rohit",
     "rssi",
     "Subpredicates",
-    "winrt"
+    "winrt",
+    "wregex"
   ]
 }
