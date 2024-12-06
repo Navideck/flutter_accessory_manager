@@ -1,0 +1,32 @@
+name: flutter_accessory_manager
+description: "Flutter implementation of ios accessory manager"
+version: 0.0.1
+homepage:
+
+environment:
+  sdk: ^3.5.3
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  bluez: ^0.8.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  pigeon: ^22.6.2
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.navideck.flutter_accessory_manager
+        pluginClass: FlutterAccessoryManagerPlugin
+      ios:
+        pluginClass: FlutterAccessoryManagerPlugin
+      macos:
+        pluginClass: FlutterAccessoryManagerPlugin
+      windows:
+        pluginClass: FlutterAccessoryManagerPluginCApi
