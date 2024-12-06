@@ -1,3 +1,8 @@
+import 'dart:isolate';
+import 'dart:ui';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
 import 'package:flutter_accessory_manager/src/generated/external_accessory.g.dart';
 
@@ -15,7 +20,24 @@ class ExternalAccessory extends FlutterAccessoryManagerInterface {
   Future<void> showBluetoothAccessoryPicker({
     List<String>? withNames,
   }) {
-    return _channel.showBluetoothAccessoryPicker(withNames ?? []);
+    // return compute(showPickerInBackground, []);
+    RootIsolateToken? rootIsolateToken = RootIsolateToken.instance;
+    if (rootIsolateToken != null) {
+      return Isolate.spawn(_showPickerInBackground, rootIsolateToken);
+    } else {
+      return _channel.showBluetoothAccessoryPicker(withNames ?? []);
+    }
+  }
+
+  Future<void> _showPickerInBackground(
+    RootIsolateToken rootIsolateToken,
+  ) async {
+    BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+    try {
+      await ExternalAccessoryChannel().showBluetoothAccessoryPicker([]);
+    } catch (e) {
+      print("AccessoryPickerError: $e");
+    }
   }
 
   @override

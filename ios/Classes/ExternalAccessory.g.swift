@@ -174,9 +174,13 @@ protocol ExternalAccessoryChannel {
 class ExternalAccessoryChannelSetup {
   static var codec: FlutterStandardMessageCodec { ExternalAccessoryPigeonCodec.shared }
   /// Sets up an instance of `ExternalAccessoryChannel` to handle messages through the `binaryMessenger`.
-  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: ExternalAccessoryChannel?, messageChannelSuffix: String = "") {
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: ExternalAccessoryChannel?, messageChannelSuffix: String = "", taskQueue: FlutterTaskQueue?) {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    let showBluetoothAccessoryPickerChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.ExternalAccessoryChannel.showBluetoothAccessoryPicker\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+
+    let showBluetoothAccessoryPickerChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.ExternalAccessoryChannel.showBluetoothAccessoryPicker\(channelSuffix)",
+                                                                         binaryMessenger: binaryMessenger,
+                                                                         codec: codec,
+                                                                         taskQueue: taskQueue)
     if let api = api {
       showBluetoothAccessoryPickerChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]

@@ -20,16 +20,29 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
     let messenger: FlutterBinaryMessenger = registrar.messenger()
     let callbackChannel = ExternalAccessoryCallbackChannel(binaryMessenger: messenger)
     let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel)
-    ExternalAccessoryChannelSetup.setUp(binaryMessenger: messenger, api: instance)
+    let taskQueue = messenger.makeBackgroundTaskQueue?()
+    ExternalAccessoryChannelSetup.setUp(binaryMessenger: messenger, api: instance, taskQueue: taskQueue)
   }
 
   func showBluetoothAccessoryPicker(withNames: [String], completion: @escaping (Result<Void, any Error>) -> Void) {
     var compoundPredicate: NSCompoundPredicate? = nil
     if !withNames.isEmpty {
       // Matches strings that start with the specified value. [c] makes the comparison case-insensitive.
-      let predicates = withNames.map { NSPredicate(format: "SELF BEGINSWITH[c] %@", $0) }  
+      let predicates = withNames.map { NSPredicate(format: "SELF BEGINSWITH[c] %@", $0) }
       compoundPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
     }
+
+    // if #available(iOS 13.0, *) {
+    //   Task {
+    //     do {
+    //       try await manager.showBluetoothAccessoryPicker(withNameFilter: compoundPredicate)
+    //       completion(.success(()))
+    //     } catch {
+    //       completion(.failure(PigeonError(code: "failed", message: error.localizedDescription, details: nil)))
+    //     }
+    //   }
+    //  return
+    // }
     manager.showBluetoothAccessoryPicker(withNameFilter: compoundPredicate) { error in
       if let error = error {
         completion(.failure(PigeonError(code: "failed", message: error.localizedDescription, details: nil)))
@@ -40,55 +53,56 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
   }
 
   func closeEASession(protocolString: String? = nil, completion: @escaping (Result<Void, Error>) -> Void) {
-      enum SessionError: Error {
-          case alreadyInProgress
-          case accessoryNotFound
-          case sessionCreationFailed
-          case noProtocolStringsAvailable
+    enum SessionError: Error {
+      case alreadyInProgress
+      case accessoryNotFound
+      case sessionCreationFailed
+      case noProtocolStringsAvailable
+    }
+
+    // Determine the protocol string to use
+    let effectiveProtocolString: String
+    if let protocolString = protocolString {
+      effectiveProtocolString = protocolString
+    } else {
+      // Find first accessory and get its first protocol string
+      guard let firstAccessory = manager.connectedAccessories.last,
+            let firstProtocolString = firstAccessory.protocolStrings.first
+      else {
+        completion(.failure(SessionError.noProtocolStringsAvailable))
+        return
       }
-      
-      // Determine the protocol string to use
-      let effectiveProtocolString: String
-      if let protocolString = protocolString {
-          effectiveProtocolString = protocolString
-      } else {
-          // Find first accessory and get its first protocol string
-          guard let firstAccessory = manager.connectedAccessories.last,
-                let firstProtocolString = firstAccessory.protocolStrings.first else {
-              completion(.failure(SessionError.noProtocolStringsAvailable))
-              return
-          }
-          effectiveProtocolString = firstProtocolString
-      }
-      
-      // Guard against existing session
-      guard eaSessionDisconnectionCompleterMap[effectiveProtocolString] == nil else {
-          completion(.failure(SessionError.alreadyInProgress))
-          return
-      }
-      
-      // Find matching accessory
-      guard let accessory = manager.connectedAccessories.first(where: {
-          $0.protocolStrings.contains(effectiveProtocolString)
-      }) else {
-          completion(.failure(SessionError.accessoryNotFound))
-          return
-      }
-      
-      // Create and validate session
-      guard let session = EASession(accessory: accessory, forProtocol: effectiveProtocolString) else {
-          completion(.failure(SessionError.sessionCreationFailed))
-          return
-      }
-      
-      // Store completion handler
-      eaSessionDisconnectionCompleterMap[effectiveProtocolString] = completion
-      
-      // Schedule session cleanup
-      DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-          session.inputStream?.close()
-          session.outputStream?.close()
-      }
+      effectiveProtocolString = firstProtocolString
+    }
+
+    // Guard against existing session
+    guard eaSessionDisconnectionCompleterMap[effectiveProtocolString] == nil else {
+      completion(.failure(SessionError.alreadyInProgress))
+      return
+    }
+
+    // Find matching accessory
+    guard let accessory = manager.connectedAccessories.first(where: {
+      $0.protocolStrings.contains(effectiveProtocolString)
+    }) else {
+      completion(.failure(SessionError.accessoryNotFound))
+      return
+    }
+
+    // Create and validate session
+    guard let session = EASession(accessory: accessory, forProtocol: effectiveProtocolString) else {
+      completion(.failure(SessionError.sessionCreationFailed))
+      return
+    }
+
+    // Store completion handler
+    eaSessionDisconnectionCompleterMap[effectiveProtocolString] = completion
+
+    // Schedule session cleanup
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+      session.inputStream?.close()
+      session.outputStream?.close()
+    }
   }
 
   @objc private func accessoryConnected(_ notification: NSNotification) {
