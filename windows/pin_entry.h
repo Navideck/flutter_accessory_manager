@@ -12,7 +12,6 @@ namespace flutter_accessory_manager
     } SizeAndPos_t;
 
     const WORD ID_btnOK = 1;
-    const WORD ID_btnCancel = 2;
     const WORD ID_txtEdit = 4;
     HWND txtEditHandle = NULL;
     HWND txtPinHandle = NULL;
@@ -68,36 +67,24 @@ namespace flutter_accessory_manager
         {
         case WM_CREATE:
         {
-            CreateWindow(
-                TEXT("Static"), TEXT("Does the pin matches ?"),
-                WS_CHILD | WS_VISIBLE | BS_FLAT,
-                50, 25, 320, 40, // X, Y, Width, Height
-                hwnd, (HMENU)ID_txtEdit, NULL, NULL);
-
             txtPinHandle = CreateWindow(
                 TEXT("Static"), TEXT(""),
                 WS_CHILD | WS_VISIBLE | BS_FLAT,
-                50, 50, 320, 40, // X, Y, Width, Height
+                50, 20, 320, 40, // X, Y, Width, Height
                 hwnd, (HMENU)ID_txtEdit, NULL, NULL);
 
             CreateWindow(
-                TEXT("Button"), TEXT("Yes"),
+                TEXT("Button"), TEXT("OK"),
                 WS_CHILD | WS_VISIBLE | BS_FLAT,
-                50, 100, 80, 40, // X, Y, Width, Height
+                50, 100, 320, 40, // X, Y, Width, Height
                 hwnd, (HMENU)ID_btnOK, NULL, NULL);
 
-            CreateWindow(
-                TEXT("Button"), TEXT("Cancel"),
-                WS_CHILD | WS_VISIBLE | BS_FLAT,
-                150, 100, 80, 40, // X, Y, Width, Height
-                hwnd, (HMENU)ID_btnCancel, NULL, NULL);
             break;
         }
         case WM_COMMAND:
-            if (LOWORD(wParam) == ID_btnOK || LOWORD(wParam) == ID_btnCancel)
+            if (LOWORD(wParam) == ID_btnOK)
             {
-                std::cout << "Ok or Cancel pressed" << std::endl;
-                acceptPairResult = LOWORD(wParam) == ID_btnOK;
+                acceptPairResult = true;
                 DestroyWindow(hwnd);
             }
             break;
@@ -209,7 +196,7 @@ namespace flutter_accessory_manager
 
         HWND hwnd = CreateWindow(
             mainWindowClass.lpszClassName,
-            TEXT("Pair Device"), (WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX) | WS_VISIBLE,
+            TEXT("PIN"), (WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX) | WS_VISIBLE,
             mainWindow.x, mainWindow.y, mainWindow.width, mainWindow.height,
             NULL, 0, hInstance, NULL);
 
@@ -218,12 +205,33 @@ namespace flutter_accessory_manager
         if (hwnd == NULL)
         {
             std::cout << "PinPairDialog: Failed to create window" << std::endl;
-            return L"";
+            return true;
         }
 
         // After creating the window, make it topmost
         SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
         ShowWindow(hwnd, SW_SHOW);
+
+        // Create a font with the desired size
+        HFONT hFont = CreateFont(
+            36,                       // Height of the font
+            0,                        // Width of the font
+            0,                        // Angle of escapement
+            0,                        // Orientation angle
+            FW_NORMAL,                // Font weight
+            FALSE,                    // Italic attribute option
+            FALSE,                    // Underline attribute option
+            FALSE,                    // Strikeout attribute option
+            DEFAULT_CHARSET,          // Character set identifier
+            OUT_DEFAULT_PRECIS,       // Output precision
+            CLIP_DEFAULT_PRECIS,      // Clipping precision
+            DEFAULT_QUALITY,          // Output quality
+            DEFAULT_PITCH | FF_SWISS, // Pitch and family
+            TEXT("Arial")             // Font name
+        );
+
+        // Set the font to the edit control
+        SendMessage(txtPinHandle, WM_SETFONT, (WPARAM)hFont, TRUE);
 
         while (GetMessage(&msg, NULL, 0, 0))
         {
@@ -236,6 +244,7 @@ namespace flutter_accessory_manager
             std::wcout << "PinPairDialog: Got invalid result" << std::endl;
         }
 
+        DeleteObject(hFont);
         DestroyWindow(hwnd);
         UnregisterClass(mainWindowClass.lpszClassName, hInstance);
         return acceptPairResult;
