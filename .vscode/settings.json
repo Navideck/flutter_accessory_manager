@@ -88,6 +88,9 @@
     "future": "cpp",
     "regex": "cpp"
   },
+  "cSpell.ignorePaths": [
+    "windows/pin_entry.h",
+  ],
   "cSpell.words": [
     "BEGINSWITH",
     "bluez",
