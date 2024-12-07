@@ -32,7 +32,16 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin, ExternalAcc
     }
     manager.showBluetoothAccessoryPicker(withNameFilter: compoundPredicate) { error in
       if let error = error {
-        completion(.failure(PigeonError(code: "failed", message: error.localizedDescription, details: nil)))
+        // Error Codes:
+        // alreadyConnected = 0
+        // resultNotFound = 1
+        // resultCancelled = 2
+        // resultFailed = 3
+        var code = "-1"
+        if let error = error as? EABluetoothAccessoryPickerError {
+          code = "\(error.code.rawValue)"
+        }
+        completion(.failure(PigeonError(code: code, message: error.localizedDescription, details: nil)))
       } else {
         completion(.success(()))
       }
