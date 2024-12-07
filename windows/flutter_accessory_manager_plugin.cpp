@@ -398,7 +398,17 @@ namespace flutter_accessory_manager
       if (!pin.empty())
       {
         std::cout << "PairLog: Accepting pair with pin: " << winrt::to_string(pin) << std::endl;
-        eventArgs.Accept(pin);
+        bool confirmed = showPairConfirmationDialog(pin);
+        if (confirmed)
+        {
+          eventArgs.Accept(pin);
+        }
+        else
+        {
+          // User rejected confirmation dialog,
+          // Accept without pin should fail pairing
+          eventArgs.Accept();
+        }
       }
       else
       {
