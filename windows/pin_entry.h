@@ -134,7 +134,6 @@ namespace flutter_accessory_manager
 
         // After creating the window, make it topmost
         SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-
         ShowWindow(hwnd, SW_SHOW);
 
         // Create a font with the desired size
@@ -155,24 +154,25 @@ namespace flutter_accessory_manager
             TEXT("Arial")             // Font name
         );
 
+        if (hFont == NULL)
+        {
+            DestroyWindow(hwnd);
+            UnregisterClass(mainWindowClass.lpszClassName, hInstance);
+            return L"";
+        }
+
         // Set the font to the edit control
         SendMessage(txtEditHandle, WM_SETFONT, (WPARAM)hFont, TRUE);
-
         while (GetMessage(&msg, NULL, 0, 0))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
 
-        if (msg.wParam != 0)
-        {
-            std::wcout << "PinPairDialog: Got invalid result" << std::endl;
-        }
-
         DeleteObject(hFont);
         DestroyWindow(hwnd);
         UnregisterClass(mainWindowClass.lpszClassName, hInstance);
-        return winrt::to_hstring(textBoxText);
+        return (msg.wParam == 0) ? winrt::to_hstring(textBoxText) : L"";
     }
 
     bool showPairConfirmationDialog(hstring pin)
@@ -191,7 +191,7 @@ namespace flutter_accessory_manager
         if (!RegisterClass(&mainWindowClass))
         {
             std::cout << "PinPairDialog: Failed to register window class" << std::endl;
-            return L"";
+            return false;
         }
 
         HWND hwnd = CreateWindow(
@@ -200,17 +200,12 @@ namespace flutter_accessory_manager
             mainWindow.x, mainWindow.y, mainWindow.width, mainWindow.height,
             NULL, 0, hInstance, NULL);
 
-        SetWindowText(txtPinHandle, pin.c_str());
-
         if (hwnd == NULL)
         {
             std::cout << "PinPairDialog: Failed to create window" << std::endl;
-            return true;
+            UnregisterClass(mainWindowClass.lpszClassName, hInstance);
+            return false;
         }
-
-        // After creating the window, make it topmost
-        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-        ShowWindow(hwnd, SW_SHOW);
 
         // Create a font with the desired size
         HFONT hFont = CreateFont(
@@ -230,7 +225,16 @@ namespace flutter_accessory_manager
             TEXT("Arial")             // Font name
         );
 
-        // Set the font to the edit control
+        if (hFont == NULL)
+        {
+            DestroyWindow(hwnd);
+            UnregisterClass(mainWindowClass.lpszClassName, hInstance);
+            return false;
+        }
+
+        SetWindowText(txtPinHandle, pin.c_str());
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        ShowWindow(hwnd, SW_SHOW);
         SendMessage(txtPinHandle, WM_SETFONT, (WPARAM)hFont, TRUE);
 
         while (GetMessage(&msg, NULL, 0, 0))
@@ -239,15 +243,10 @@ namespace flutter_accessory_manager
             DispatchMessage(&msg);
         }
 
-        if (msg.wParam != 0)
-        {
-            std::wcout << "PinPairDialog: Got invalid result" << std::endl;
-        }
-
         DeleteObject(hFont);
         DestroyWindow(hwnd);
         UnregisterClass(mainWindowClass.lpszClassName, hInstance);
-        return acceptPairResult;
-    }
 
+        return (msg.wParam == 0) ? acceptPairResult : false;
+    }
 }
