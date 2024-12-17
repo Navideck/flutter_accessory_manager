@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -29,7 +30,23 @@ class BluetoothDeviceItem extends StatelessWidget {
   }
 
   Future<void> sendReport() async {
-    await sendVolumeUpMacReport();
+    if (Platform.isAndroid) {
+      await sendVolumeDownAndroidReport();
+    } else if (Platform.isMacOS) {
+      await sendVolumeUpMacReport();
+    }
+  }
+
+  Future<void> sendVolumeDownAndroidReport() async {
+    await FlutterAccessoryManager.sendReport(
+      device.address,
+      Uint8List.fromList([0x01, 0xEA, 0x00]), // VolumeDown button down
+    );
+    await Future.delayed(const Duration(milliseconds: 200));
+    await FlutterAccessoryManager.sendReport(
+      device.address,
+      Uint8List.fromList([0x01, 0x00, 0x00]), // VolumeDown button up
+    );
   }
 
   Future<void> sendVolumeUpMacReport() async {

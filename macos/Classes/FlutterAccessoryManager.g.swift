@@ -150,20 +150,36 @@ struct MacSdpConfig {
 
 /// Generated class from Pigeon that represents data sent in messages.
 struct AndroidSdpConfig {
-  var data: [String: Any]
+  var name: String
+  var description: String
+  var provider: String
+  var subclass: Int64
+  var descriptors: FlutterStandardTypedData
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> AndroidSdpConfig? {
-    let data = pigeonVar_list[0] as! [String: Any]
+    let name = pigeonVar_list[0] as! String
+    let description = pigeonVar_list[1] as! String
+    let provider = pigeonVar_list[2] as! String
+    let subclass = pigeonVar_list[3] as! Int64
+    let descriptors = pigeonVar_list[4] as! FlutterStandardTypedData
 
     return AndroidSdpConfig(
-      data: data
+      name: name,
+      description: description,
+      provider: provider,
+      subclass: subclass,
+      descriptors: descriptors
     )
   }
   func toList() -> [Any?] {
     return [
-      data
+      name,
+      description,
+      provider,
+      subclass,
+      descriptors,
     ]
   }
 }

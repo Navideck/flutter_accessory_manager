@@ -176,10 +176,27 @@ class MacSdpConfig {
 class AndroidSdpConfig {
  public:
   // Constructs an object setting all fields.
-  explicit AndroidSdpConfig(const flutter::EncodableMap& data);
+  explicit AndroidSdpConfig(
+    const std::string& name,
+    const std::string& description,
+    const std::string& provider,
+    int64_t subclass,
+    const std::vector<uint8_t>& descriptors);
 
-  const flutter::EncodableMap& data() const;
-  void set_data(const flutter::EncodableMap& value_arg);
+  const std::string& name() const;
+  void set_name(std::string_view value_arg);
+
+  const std::string& description() const;
+  void set_description(std::string_view value_arg);
+
+  const std::string& provider() const;
+  void set_provider(std::string_view value_arg);
+
+  int64_t subclass() const;
+  void set_subclass(int64_t value_arg);
+
+  const std::vector<uint8_t>& descriptors() const;
+  void set_descriptors(const std::vector<uint8_t>& value_arg);
 
 
  private:
@@ -189,7 +206,11 @@ class AndroidSdpConfig {
   friend class FlutterAccessoryPlatformChannel;
   friend class FlutterAccessoryCallbackChannel;
   friend class PigeonInternalCodecSerializer;
-  flutter::EncodableMap data_;
+  std::string name_;
+  std::string description_;
+  std::string provider_;
+  int64_t subclass_;
+  std::vector<uint8_t> descriptors_;
 
 };
 

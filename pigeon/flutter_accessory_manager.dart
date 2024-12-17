@@ -92,9 +92,17 @@ class MacSdpConfig {
 }
 
 class AndroidSdpConfig {
-  Map<String, Object> data;
+  String name;
+  String description;
+  String provider;
+  int subclass;
+  Uint8List descriptors;
 
   AndroidSdpConfig({
-    required this.data,
+    required this.name,
+    required this.description,
+    required this.provider,
+    required this.subclass,
+    required this.descriptors,
   });
 }

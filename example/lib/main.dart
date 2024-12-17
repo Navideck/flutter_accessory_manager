@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_print
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_accessory_manager/flutter_accessory_manager.dart';
 import 'package:flutter_accessory_manager_example/bluetooth_device.dart';
@@ -101,6 +103,42 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  Future<void> setupSdp() async {
+    try {
+      await FlutterAccessoryManager.setupSdp(
+        config: SdpConfig(
+          macSdpConfig: MacSdpConfig(
+            sdpPlistFile: "SerialPortDictionary",
+          ),
+          androidSdpConfig: AndroidSdpConfig(
+            name: "BlueHID",
+            description: "Android HID",
+            provider: "Android",
+            subclass: 0x00,
+            descriptors: Uint8List.fromList(androidDescriptor),
+          ),
+        ),
+      );
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  final List<int> androidDescriptor = [
+    0x05, 0x0C, // Usage Page (Consumer)
+    0x09, 0x01, // Usage (Consumer Control)
+    0xA1, 0x01, // Collection (Application)
+    0x85, 0x01, //   Report ID (1)
+    0x19, 0x00, //   Usage Minimum (Unassigned)
+    0x2A, 0x3C, 0x02, //   Usage Maximum (AC Format)
+    0x15, 0x00, //   Logical Minimum (0)
+    0x26, 0x3C, 0x02, //   Logical Maximum (572)
+    0x95, 0x01, //   Report Count (1)
+    0x75, 0x10, //   Report Size (16)
+    0x81, 0x00, //   Input (Data,Array)
+    0xC0, // End Collection
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,20 +157,7 @@ class _MyAppState extends State<MyApp> {
           ResponsiveButtonsGrid(
             children: [
               PlatformButton(
-                onPressed: () async {
-                  try {
-                    await FlutterAccessoryManager.setupSdp(
-                      config: SdpConfig(
-                        macSdpConfig: MacSdpConfig(
-                          sdpPlistFile: "SerialPortDictionary",
-                        ),
-                        androidSdpConfig: null,
-                      ),
-                    );
-                  } catch (e) {
-                    print(e);
-                  }
-                },
+                onPressed: setupSdp,
                 text: "SetupSdp",
               ),
               PlatformButton(

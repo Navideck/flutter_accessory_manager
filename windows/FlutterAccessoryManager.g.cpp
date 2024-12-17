@@ -236,28 +236,81 @@ MacSdpConfig MacSdpConfig::FromEncodableList(const EncodableList& list) {
 
 // AndroidSdpConfig
 
-AndroidSdpConfig::AndroidSdpConfig(const EncodableMap& data)
- : data_(data) {}
+AndroidSdpConfig::AndroidSdpConfig(
+  const std::string& name,
+  const std::string& description,
+  const std::string& provider,
+  int64_t subclass,
+  const std::vector<uint8_t>& descriptors)
+ : name_(name),
+    description_(description),
+    provider_(provider),
+    subclass_(subclass),
+    descriptors_(descriptors) {}
 
-const EncodableMap& AndroidSdpConfig::data() const {
-  return data_;
+const std::string& AndroidSdpConfig::name() const {
+  return name_;
 }
 
-void AndroidSdpConfig::set_data(const EncodableMap& value_arg) {
-  data_ = value_arg;
+void AndroidSdpConfig::set_name(std::string_view value_arg) {
+  name_ = value_arg;
+}
+
+
+const std::string& AndroidSdpConfig::description() const {
+  return description_;
+}
+
+void AndroidSdpConfig::set_description(std::string_view value_arg) {
+  description_ = value_arg;
+}
+
+
+const std::string& AndroidSdpConfig::provider() const {
+  return provider_;
+}
+
+void AndroidSdpConfig::set_provider(std::string_view value_arg) {
+  provider_ = value_arg;
+}
+
+
+int64_t AndroidSdpConfig::subclass() const {
+  return subclass_;
+}
+
+void AndroidSdpConfig::set_subclass(int64_t value_arg) {
+  subclass_ = value_arg;
+}
+
+
+const std::vector<uint8_t>& AndroidSdpConfig::descriptors() const {
+  return descriptors_;
+}
+
+void AndroidSdpConfig::set_descriptors(const std::vector<uint8_t>& value_arg) {
+  descriptors_ = value_arg;
 }
 
 
 EncodableList AndroidSdpConfig::ToEncodableList() const {
   EncodableList list;
-  list.reserve(1);
-  list.push_back(EncodableValue(data_));
+  list.reserve(5);
+  list.push_back(EncodableValue(name_));
+  list.push_back(EncodableValue(description_));
+  list.push_back(EncodableValue(provider_));
+  list.push_back(EncodableValue(subclass_));
+  list.push_back(EncodableValue(descriptors_));
   return list;
 }
 
 AndroidSdpConfig AndroidSdpConfig::FromEncodableList(const EncodableList& list) {
   AndroidSdpConfig decoded(
-    std::get<EncodableMap>(list[0]));
+    std::get<std::string>(list[0]),
+    std::get<std::string>(list[1]),
+    std::get<std::string>(list[2]),
+    std::get<int64_t>(list[3]),
+    std::get<std::vector<uint8_t>>(list[4]));
   return decoded;
 }
 

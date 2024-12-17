@@ -115,21 +115,41 @@ class MacSdpConfig {
 
 class AndroidSdpConfig {
   AndroidSdpConfig({
-    required this.data,
+    required this.name,
+    required this.description,
+    required this.provider,
+    required this.subclass,
+    required this.descriptors,
   });
 
-  Map<String, Object> data;
+  String name;
+
+  String description;
+
+  String provider;
+
+  int subclass;
+
+  Uint8List descriptors;
 
   Object encode() {
     return <Object?>[
-      data,
+      name,
+      description,
+      provider,
+      subclass,
+      descriptors,
     ];
   }
 
   static AndroidSdpConfig decode(Object result) {
     result as List<Object?>;
     return AndroidSdpConfig(
-      data: (result[0] as Map<Object?, Object?>?)!.cast<String, Object>(),
+      name: result[0]! as String,
+      description: result[1]! as String,
+      provider: result[2]! as String,
+      subclass: result[3]! as int,
+      descriptors: result[4]! as Uint8List,
     );
   }
 }

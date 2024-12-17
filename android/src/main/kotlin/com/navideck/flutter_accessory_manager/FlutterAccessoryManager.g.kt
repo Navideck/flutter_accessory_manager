@@ -120,18 +120,30 @@ data class MacSdpConfig (
 
 /** Generated class from Pigeon that represents data sent in messages. */
 data class AndroidSdpConfig (
-  val data: Map<String, Any>
+  val name: String,
+  val description: String,
+  val provider: String,
+  val subclass: Long,
+  val descriptors: ByteArray
 )
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): AndroidSdpConfig {
-      val data = pigeonVar_list[0] as Map<String, Any>
-      return AndroidSdpConfig(data)
+      val name = pigeonVar_list[0] as String
+      val description = pigeonVar_list[1] as String
+      val provider = pigeonVar_list[2] as String
+      val subclass = pigeonVar_list[3] as Long
+      val descriptors = pigeonVar_list[4] as ByteArray
+      return AndroidSdpConfig(name, description, provider, subclass, descriptors)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
-      data,
+      name,
+      description,
+      provider,
+      subclass,
+      descriptors,
     )
   }
 }
