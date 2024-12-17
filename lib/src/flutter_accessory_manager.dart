@@ -22,6 +22,16 @@ class FlutterAccessoryManager {
   static Future<void> disconnect(String deviceId) =>
       _platform.disconnect(deviceId);
 
+  static Future<void> connect(String deviceId) => _platform.connect(deviceId);
+
+  static Future<void> sendReport(String deviceId, Uint8List data) =>
+      _platform.sendReport(deviceId, data);
+
+  static Future<void> setupSdp({
+    required SdpConfig config,
+  }) =>
+      _platform.setupSdp(config);
+
   static Future<void> startScan() => _platform.startScan();
 
   static Future<void> stopScan() => _platform.stopScan();

@@ -1,7 +1,10 @@
 // ignore_for_file: avoid_print
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_accessory_manager/flutter_accessory_manager.dart';
+import 'package:flutter_accessory_manager_example/bluetooth_device.dart';
 import 'package:flutter_accessory_manager_example/global_widgets.dart';
 import 'package:flutter_accessory_manager_example/permission_handler.dart';
 
@@ -100,16 +103,41 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> pairDevice(BluetoothDevice device) async {
+  Future<void> setupSdp() async {
     try {
-      await stopScan();
-      print("Pairing");
-      bool paired = await FlutterAccessoryManager.pair(device.address);
-      print("Pair: $paired");
+      await FlutterAccessoryManager.setupSdp(
+        config: SdpConfig(
+          macSdpConfig: MacSdpConfig(
+            sdpPlistFile: "SerialPortDictionary",
+          ),
+          androidSdpConfig: AndroidSdpConfig(
+            name: "BlueHID",
+            description: "Android HID",
+            provider: "Android",
+            subclass: 0x00,
+            descriptors: Uint8List.fromList(androidDescriptor),
+          ),
+        ),
+      );
     } catch (e) {
       print(e);
     }
   }
+
+  final List<int> androidDescriptor = [
+    0x05, 0x0C, // Usage Page (Consumer)
+    0x09, 0x01, // Usage (Consumer Control)
+    0xA1, 0x01, // Collection (Application)
+    0x85, 0x01, //   Report ID (1)
+    0x19, 0x00, //   Usage Minimum (Unassigned)
+    0x2A, 0x3C, 0x02, //   Usage Maximum (AC Format)
+    0x15, 0x00, //   Logical Minimum (0)
+    0x26, 0x3C, 0x02, //   Logical Maximum (572)
+    0x95, 0x01, //   Report Count (1)
+    0x75, 0x10, //   Report Size (16)
+    0x81, 0x00, //   Input (Data,Array)
+    0xC0, // End Collection
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +156,10 @@ class _MyAppState extends State<MyApp> {
         children: [
           ResponsiveButtonsGrid(
             children: [
+              PlatformButton(
+                onPressed: setupSdp,
+                text: "SetupSdp",
+              ),
               PlatformButton(
                 onPressed: () async {
                   try {
@@ -209,33 +241,7 @@ class _MyAppState extends State<MyApp> {
               itemCount: devices.length,
               itemBuilder: (BuildContext context, int index) {
                 BluetoothDevice device = devices[index];
-                return Column(
-                  children: [
-                    ListTile(
-                      title: Text(device.name ?? "N/A"),
-                      subtitle: Text(device.address),
-                      trailing: Text(device.rssi.toString()),
-                    ),
-                    ResponsiveButtonsGrid(
-                      children: [
-                        PlatformButton(
-                          onPressed: () => pairDevice(device),
-                          text: "Pair",
-                        ),
-                        PlatformButton(
-                          onPressed: () async {
-                            print("Disconnecting");
-                            await FlutterAccessoryManager.disconnect(
-                              device.address,
-                            );
-                            print("Disconnected");
-                          },
-                          text: "Disconnect",
-                        ),
-                      ],
-                    )
-                  ],
-                );
+                return BluetoothDeviceItem(device);
               },
               separatorBuilder: (BuildContext context, int index) {
                 return const Divider();

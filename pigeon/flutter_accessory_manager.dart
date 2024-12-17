@@ -29,7 +29,14 @@ abstract class FlutterAccessoryPlatformChannel {
   );
 
   @async
+  void connect(String deviceId);
+
+  @async
   void disconnect(String deviceId);
+
+  void setupSdp(SdpConfig config);
+
+  void sendReport(String deviceId, Uint8List data);
 
   void startScan();
 
@@ -62,5 +69,40 @@ class BluetoothDevice {
     required this.name,
     required this.paired,
     required this.rssi,
+  });
+}
+
+class SdpConfig {
+  MacSdpConfig? macSdpConfig;
+  AndroidSdpConfig? androidSdpConfig;
+
+  SdpConfig({
+    required this.macSdpConfig,
+    required this.androidSdpConfig,
+  });
+}
+
+class MacSdpConfig {
+  String? sdpPlistFile;
+  Map<String, Object>? data;
+
+  MacSdpConfig({
+    this.data,
+  });
+}
+
+class AndroidSdpConfig {
+  String name;
+  String description;
+  String provider;
+  int subclass;
+  Uint8List descriptors;
+
+  AndroidSdpConfig({
+    required this.name,
+    required this.description,
+    required this.provider,
+    required this.subclass,
+    required this.descriptors,
   });
 }

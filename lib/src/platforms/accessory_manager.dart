@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
 import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
 
@@ -36,6 +38,16 @@ class AccessoryManager extends FlutterAccessoryManagerInterface {
   @override
   Future<List<BluetoothDevice>> getPairedDevices() =>
       _channel.getPairedDevices();
+
+  @override
+  Future<void> connect(String deviceId) => _channel.connect(deviceId);
+
+  @override
+  Future<void> sendReport(String deviceId, Uint8List data) =>
+      _channel.sendReport(deviceId, data);
+
+  @override
+  Future<void> setupSdp(SdpConfig config) => _channel.setupSdp(config);
 }
 
 // Handle callbacks from Native to Flutter
