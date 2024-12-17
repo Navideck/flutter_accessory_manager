@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_accessory_manager/src/generated/external_accessory.g.dart';
 import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
 
@@ -17,7 +19,19 @@ abstract class FlutterAccessoryManagerInterface {
     throw UnimplementedError();
   }
 
+  Future<void> connect(String deviceId) {
+    throw UnimplementedError();
+  }
+
   Future<void> disconnect(String deviceId) {
+    throw UnimplementedError();
+  }
+
+  Future<void> setupSdp(SdpConfig config) {
+    throw UnimplementedError();
+  }
+
+  Future<void> sendReport(String deviceId, Uint8List data) {
     throw UnimplementedError();
   }
 

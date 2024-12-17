@@ -93,6 +93,8 @@
     "bluez",
     "bredr",
     "bytevc",
+    "HIDLANGID",
+    "HIDP",
     "hresult",
     "hstring",
     "Inspectable",
