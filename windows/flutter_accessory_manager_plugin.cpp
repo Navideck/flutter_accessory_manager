@@ -45,12 +45,10 @@ namespace flutter_accessory_manager
     ShowDevicePicker(result);
   }
 
-  void FlutterAccessoryManagerPlugin::Disconnect(
-      const std::string &device_id,
-      std::function<void(std::optional<FlutterError> reply)> result)
-  {
-    DisconnectAsync(device_id, result);
-  }
+  // void FlutterAccessoryManagerPlugin::Disconnect(const std::string &device_id,std::function<void(std::optional<FlutterError> reply)> result)
+  // {
+  //   DisconnectAsync(device_id, result);
+  // }
 
   std::optional<FlutterError> FlutterAccessoryManagerPlugin::StartScan()
   {
