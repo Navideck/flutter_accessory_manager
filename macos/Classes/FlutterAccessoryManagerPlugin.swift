@@ -1,10 +1,10 @@
 import AppKit
-import Carbon.HIToolbox // virtual keys
+import Carbon.HIToolbox
 import Cocoa
 import FlutterMacOS
 import Foundation
 import IOBluetooth
-import IOKit.hid // hid keys
+import IOKit.hid
 
 public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     var callbackChannel: FlutterAccessoryCallbackChannel
@@ -70,7 +70,6 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
         }
 
         // Initiate Connection, calling in DispatchQueue fails setup
-        //  DispatchQueue.global(qos: .background).async {
         if !device.isConnected() {
             let ioReturn: IOReturn = device.openConnection(
                 nil,
@@ -84,19 +83,9 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
                 return
             }
         }
-        // }
 
         // Setup L2CAP channels
-        do {
-            try openChannels(device: device)
-            completion(.success(()))
-        } catch {
-            if error is PigeonError {
-                completion(.failure(error))
-            } else {
-                completion(.failure(PigeonError(code: "Failed", message: String(describing: error), details: nil)))
-            }
-        }
+        openChannels(device: device, completion: completion)
     }
 
     func disconnect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
@@ -116,8 +105,8 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
     func setupSdp(config: SdpConfig) throws {
         if let macConfig = config.macSdpConfig {
             try setupBluetoothSdpConfig(config: macConfig)
-        } else{
-            throw PigeonError(code: "ConfigError", message: "MacConfig not provided", details: nil )
+        } else {
+            throw PigeonError(code: "ConfigError", message: "MacConfig not provided", details: nil)
         }
     }
 
@@ -170,39 +159,27 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
 }
 
 extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
-    @objc public func deviceInquiryStarted(_: IOBluetoothDeviceInquiry!) {
+    @objc public func deviceInquiryStarted(_: IOBluetoothDeviceInquiry) {
         isInquiryStarted = true
     }
 
-    @objc public func deviceInquiryComplete(_: IOBluetoothDeviceInquiry!, error: IOReturn, aborted _: Bool) {
+    @objc public func deviceInquiryComplete(_: IOBluetoothDeviceInquiry, error: IOReturn, aborted _: Bool) {
         isInquiryStarted = false
         if error != kIOReturnSuccess {
             print("Inquiry failed with error: \(error)")
         }
     }
 
-    @objc public func deviceInquiryDeviceFound(_: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!) {
+    @objc public func deviceInquiryDeviceFound(_: IOBluetoothDeviceInquiry, device: IOBluetoothDevice) {
         callbackChannel.onDeviceDiscover(device: device.toBLuetoothDevice()) { _ in }
     }
 
-    @objc public func deviceInquiryUpdatingDeviceNamesStarted(_: IOBluetoothDeviceInquiry!, devicesRemaining: UInt32) {
+    @objc public func deviceInquiryUpdatingDeviceNamesStarted(_: IOBluetoothDeviceInquiry, devicesRemaining: UInt32) {
         print("Updating device names started: devicesRemaining = \(devicesRemaining)")
     }
 
-    @objc public func deviceInquiryDeviceNameUpdated(_: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!, devicesRemaining: UInt32) {
+    @objc public func deviceInquiryDeviceNameUpdated(_: IOBluetoothDeviceInquiry, device: IOBluetoothDevice, devicesRemaining: UInt32) {
         print("Device name updated: devicesRemaining = \(devicesRemaining), name = \(String(describing: device.nameOrAddress))")
-    }
-
-    private func btDeviceAddressToString(address: BluetoothDeviceAddress) -> String {
-        let a = [
-            String(format: "%02X", address.data.0),
-            String(format: "%02X", address.data.1),
-            String(format: "%02X", address.data.2),
-            String(format: "%02X", address.data.3),
-            String(format: "%02X", address.data.4),
-            String(format: "%02X", address.data.5),
-        ]
-        return a.joined(separator: "-")
     }
 }
 
@@ -210,17 +187,17 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
     func setupBluetoothSdpConfig(config: MacSdpConfig) throws {
         let bluetoothHost = IOBluetoothHostController()
         bluetoothHost.setClassOfDevice(0x002540, forTimeInterval: 60)
-        
-        var sdpDict: NSDictionary? = nil;
-        
+
+        var sdpDict: NSDictionary? = nil
+
         if let sdpPlist = config.sdpPlistFile {
-              let dictPath = Bundle.main.path(forResource: sdpPlist, ofType: "plist")
-              sdpDict = NSDictionary(contentsOfFile: dictPath!)!
+            let dictPath = Bundle.main.path(forResource: sdpPlist, ofType: "plist")
+            sdpDict = NSDictionary(contentsOfFile: dictPath!)!
         } else if let sdpPlistData = config.data {
             // TODO: Fix this
-             sdpDict =  NSDictionary(dictionary: sdpPlistData)
+            sdpDict = NSDictionary(dictionary: sdpPlistData)
         }
-        
+
         if sdpDict == nil {
             throw PigeonError(code: "Failed to setup SDP", message: "SDP Dictionary is nil", details: nil)
         }
@@ -229,44 +206,43 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         service = IOBluetoothSDPServiceRecord.publishedServiceRecord(with: sdpDict! as [NSObject: AnyObject])
 
         // Open Channels for Incoming Connections
-        let controlChannelOpen = IOBluetoothL2CAPChannel
+        guard IOBluetoothL2CAPChannel
             .register(forChannelOpenNotifications: self,
                       selector: #selector(newL2CAPChannelOpened),
                       withPSM: BTChannels.Control,
-                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming)
-
-        if controlChannelOpen == nil {
-            print("failed to register ControlChannel")
-            return
+                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming) != nil
+        else {
+            throw PigeonError(code: "Failed", message: "Failed to register ControlChannel", details: nil)
         }
 
-        let interruptChannelOpen = IOBluetoothL2CAPChannel
+        guard IOBluetoothL2CAPChannel
             .register(forChannelOpenNotifications: self,
                       selector: #selector(newL2CAPChannelOpened),
                       withPSM: BTChannels.Interrupt,
-                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming)
-
-        if interruptChannelOpen == nil {
-            print("failed to registered InterruptChannel")
-            return
+                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming) != nil
+        else {
+            throw PigeonError(code: "Failed", message: "Failed to register InterruptChannel", details: nil)
         }
     }
 
-    func openChannels(device: IOBluetoothDevice) throws {
+    func openChannels(device: IOBluetoothDevice, completion: @escaping (Result<Void, any Error>) -> Void) {
         let btDevice = BTDevice()
         btDevice.device = device
 
         var result = device.openL2CAPChannelSync(&btDevice.controlChannel, withPSM: BTChannels.Control, delegate: self)
         if result != kIOReturnSuccess {
-            throw PigeonError(code: "Failed", message: "Failed to open ControlChannel \(result)", details: nil)
+            completion(.failure(PigeonError(code: "Failed", message: "Failed to open ControlChannel \(result)", details: nil)))
+            return
         }
 
         result = device.openL2CAPChannelSync(&btDevice.interruptChannel, withPSM: BTChannels.Interrupt, delegate: self)
         if result != kIOReturnSuccess {
-            throw PigeonError(code: "Failed", message: "Failed to open Interuppt \(result)", details: nil)
+            completion(.failure(PigeonError(code: "Failed", message: "Failed to open Interrupt \(result)", details: nil)))
+            return
         }
 
         delegateMap[device.addressString] = btDevice
+        completion(.success(()))
     }
 
     private func sendBytes(channel: IOBluetoothL2CAPChannel, _ bytes: [UInt8]) throws {
@@ -283,8 +259,14 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         }
     }
 
-    @objc public func l2capChannelOpenComplete(_ channel: IOBluetoothL2CAPChannel!, status _: IOReturn) {
-        let deviceId: String = channel.device.addressString
+    @objc public func l2capChannelOpenComplete(_ channel: IOBluetoothL2CAPChannel, status: IOReturn) {
+        if status != kIOReturnSuccess {
+            print("L2capChannelOpenCompleteStatus \(status)")
+        }
+        guard let deviceId: String = channel.device?.addressString else {
+            print("ChannelOpened but no device address")
+            return
+        }
         switch channel.psm {
         case BTChannels.Control:
             print("Opened ControlChannel for \(deviceId)")
@@ -297,8 +279,11 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         }
     }
 
-    @objc public func l2capChannelClosed(_ channel: IOBluetoothL2CAPChannel!) {
-        let deviceId: String = channel.device.addressString
+    @objc public func l2capChannelClosed(_ channel: IOBluetoothL2CAPChannel) {
+        guard let deviceId: String = channel.device?.addressString else {
+            print("ChannelClosed but no device address")
+            return
+        }
         switch channel.psm {
         case BTChannels.Control:
             print("Closed ControlChannel for \(deviceId)")
@@ -311,7 +296,7 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         }
     }
 
-    @objc private func l2capChannelWriteComplete(channel _: IOBluetoothL2CAPChannel!, refcon _: UnsafeMutableRawPointer, status _: IOReturn) {
+    @objc private func l2capChannelWriteComplete(channel _: IOBluetoothL2CAPChannel, refcon _: UnsafeMutableRawPointer, status _: IOReturn) {
         print("l2capChannelWriteComplete")
     }
 
@@ -319,8 +304,8 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         print("NewChannelOpened")
         channel.setDelegate(self)
     }
-    
-    @objc private func l2capChannelData(channel: IOBluetoothL2CAPChannel!, data dataPointer: UnsafePointer<UInt8>, length dataLength: Int) {
+
+    @objc private func l2capChannelData(channel: IOBluetoothL2CAPChannel, data dataPointer: UnsafePointer<UInt8>, length dataLength: Int) {
         let data = UnsafeBufferPointer<UInt8>(start: UnsafePointer<UInt8>?(dataPointer), count: dataLength)
         if channel.psm == BTChannels.Control {
             guard data.count > 0 else { return }
@@ -328,7 +313,7 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
             else { return }
             switch messageType {
             case .Handshake:
-                print("Got Handsake")
+                print("Got Handshake")
                 return
             case .HIDControl:
                 print("Got HidControl")
