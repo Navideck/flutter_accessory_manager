@@ -30,7 +30,8 @@ import java.util.UUID
 private const val TAG = "FlutterAccessoryManagerPlugin"
 
 @SuppressLint("MissingPermission")
-class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPlugin,
+class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
+    BluetoothHidManagerPlatformChannel, FlutterPlugin,
     ActivityAware {
     private var callbackChannel: FlutterAccessoryCallbackChannel? = null
     private var mainThreadHandler: Handler? = null
@@ -44,6 +45,8 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         FlutterAccessoryPlatformChannel.setUp(flutterPluginBinding.binaryMessenger, this)
+        BluetoothHidManagerPlatformChannel.setUp(flutterPluginBinding.binaryMessenger, this)
+
         callbackChannel = FlutterAccessoryCallbackChannel(flutterPluginBinding.binaryMessenger)
         mainThreadHandler = Handler(Looper.getMainLooper())
         val context = flutterPluginBinding.applicationContext

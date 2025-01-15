@@ -28,6 +28,68 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
         let callbackChannel = FlutterAccessoryCallbackChannel(binaryMessenger: messenger)
         let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel)
         FlutterAccessoryPlatformChannelSetup.setUp(binaryMessenger: messenger, api: instance)
+        BluetoothHidManagerPlatformChannelSetup.setUp(binaryMessenger: messenger, api: instance)
+    }
+}
+
+extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
+    
+    func setupSdp(config: SdpConfig) throws {
+        if let macConfig = config.macSdpConfig {
+            try setupBluetoothSdpConfig(config: macConfig)
+        } else {
+            throw PigeonError(code: "ConfigError", message: "MacConfig not provided", details: nil)
+        }
+    }
+    
+    func connect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
+        guard let device = IOBluetoothDevice(addressString: deviceId) else {
+            completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
+            return
+        }
+
+        // Initiate Connection, calling in DispatchQueue fails setup
+        if !device.isConnected() {
+            let ioReturn: IOReturn = device.openConnection(
+                nil,
+                withPageTimeout: UInt16(round(2.0 * 1600)),
+                authenticationRequired: true
+            )
+
+            if ioReturn != kIOReturnSuccess {
+                let errorString = String(cString: mach_error_string(Int32(ioReturn)))
+                completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
+                return
+            }
+        }
+
+        // Setup L2CAP channels
+        openChannels(device: device, completion: completion)
+    }
+    
+    
+    func disconnect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
+        guard let device = IOBluetoothDevice(addressString: deviceId) else {
+            completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
+            return
+        }
+        let ioReturn: IOReturn = device.closeConnection()
+        if ioReturn == kIOReturnSuccess {
+            completion(.success(()))
+            return
+        }
+        let errorString = String(cString: mach_error_string(Int32(ioReturn)))
+        completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
+    }
+
+
+    func sendReport(deviceId: String, data: FlutterStandardTypedData) throws {
+        let byteArray = [UInt8](data.data)
+        if let interruptChannel = delegateMap[deviceId]?.interruptChannel {
+            try sendBytes(channel: interruptChannel, byteArray)
+        } else {
+            throw PigeonError(code: "Failed", message: "No interruptChannel", details: nil)
+        }
     }
 }
 
@@ -61,62 +123,6 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
             waitUntilDone: false
         )
         completion(.success(()))
-    }
-
-    func connect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
-        guard let device = IOBluetoothDevice(addressString: deviceId) else {
-            completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
-            return
-        }
-
-        // Initiate Connection, calling in DispatchQueue fails setup
-        if !device.isConnected() {
-            let ioReturn: IOReturn = device.openConnection(
-                nil,
-                withPageTimeout: UInt16(round(2.0 * 1600)),
-                authenticationRequired: true
-            )
-
-            if ioReturn != kIOReturnSuccess {
-                let errorString = String(cString: mach_error_string(Int32(ioReturn)))
-                completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
-                return
-            }
-        }
-
-        // Setup L2CAP channels
-        openChannels(device: device, completion: completion)
-    }
-
-    func disconnect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
-        guard let device = IOBluetoothDevice(addressString: deviceId) else {
-            completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
-            return
-        }
-        let ioReturn: IOReturn = device.closeConnection()
-        if ioReturn == kIOReturnSuccess {
-            completion(.success(()))
-            return
-        }
-        let errorString = String(cString: mach_error_string(Int32(ioReturn)))
-        completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
-    }
-
-    func setupSdp(config: SdpConfig) throws {
-        if let macConfig = config.macSdpConfig {
-            try setupBluetoothSdpConfig(config: macConfig)
-        } else {
-            throw PigeonError(code: "ConfigError", message: "MacConfig not provided", details: nil)
-        }
-    }
-
-    func sendReport(deviceId: String, data: FlutterStandardTypedData) throws {
-        let byteArray = [UInt8](data.data)
-        if let interruptChannel = delegateMap[deviceId]?.interruptChannel {
-            try sendBytes(channel: interruptChannel, byteArray)
-        } else {
-            throw PigeonError(code: "Failed", message: "No interruptChannel", details: nil)
-        }
     }
 
     func pair(address: String, completion: @escaping (Result<Bool, any Error>) -> Void) {

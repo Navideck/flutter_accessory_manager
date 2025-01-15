@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
+import 'package:flutter_accessory_manager/src/generated/bluetooth_hid_manager.g.dart';
 import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
 
 class AccessoryManager extends FlutterAccessoryManagerInterface {
@@ -11,43 +12,47 @@ class AccessoryManager extends FlutterAccessoryManagerInterface {
     FlutterAccessoryCallbackChannel.setUp(_CallbackHandler());
   }
 
-  static final _channel = FlutterAccessoryPlatformChannel();
+  static final _accessoryManagerChannel = FlutterAccessoryPlatformChannel();
+  static final _hidManagerChannel = BluetoothHidManagerPlatformChannel();
 
   @override
   Future<void> showBluetoothAccessoryPicker({
     List<String>? withNames,
   }) {
-    return _channel.showBluetoothAccessoryPicker(withNames ?? []);
+    return _accessoryManagerChannel
+        .showBluetoothAccessoryPicker(withNames ?? []);
   }
 
   @override
-  Future<void> disconnect(String deviceId) => _channel.disconnect(deviceId);
+  Future<void> disconnect(String deviceId) =>
+      _hidManagerChannel.disconnect(deviceId);
 
   @override
-  Future<void> startScan() => _channel.startScan();
+  Future<void> startScan() => _accessoryManagerChannel.startScan();
 
   @override
-  Future<void> stopScan() => _channel.stopScan();
+  Future<void> stopScan() => _accessoryManagerChannel.stopScan();
 
   @override
-  Future<bool> isScanning() => _channel.isScanning();
+  Future<bool> isScanning() => _accessoryManagerChannel.isScanning();
 
   @override
-  Future<bool> pair(String address) => _channel.pair(address);
+  Future<bool> pair(String address) => _accessoryManagerChannel.pair(address);
 
   @override
   Future<List<BluetoothDevice>> getPairedDevices() =>
-      _channel.getPairedDevices();
+      _accessoryManagerChannel.getPairedDevices();
 
   @override
-  Future<void> connect(String deviceId) => _channel.connect(deviceId);
+  Future<void> connect(String deviceId) => _hidManagerChannel.connect(deviceId);
 
   @override
   Future<void> sendReport(String deviceId, Uint8List data) =>
-      _channel.sendReport(deviceId, data);
+      _hidManagerChannel.sendReport(deviceId, data);
 
   @override
-  Future<void> setupSdp(SdpConfig config) => _channel.setupSdp(config);
+  Future<void> setupSdp(SdpConfig config) =>
+      _hidManagerChannel.setupSdp(config);
 }
 
 // Handle callbacks from Native to Flutter

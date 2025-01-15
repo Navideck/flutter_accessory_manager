@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter_accessory_manager/src/generated/bluetooth_hid_manager.g.dart';
 import 'package:flutter_accessory_manager/src/generated/external_accessory.g.dart';
 import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
 
