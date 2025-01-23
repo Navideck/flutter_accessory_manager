@@ -34,6 +34,42 @@ private fun wrapError(exception: Throwable): List<Any?> {
   }
 }
 
+private fun createConnectionError(channelName: String): FlutterError {
+  return FlutterError("channel-error",  "Unable to establish connection on channel: '$channelName'.", "")}
+
+enum class ReportType(val raw: Int) {
+  INPUT(0),
+  OUTPUT(1),
+  FEATURE(2);
+
+  companion object {
+    fun ofRaw(raw: Int): ReportType? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class ReportReply (
+  val error: Long? = null,
+  val data: ByteArray? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): ReportReply {
+      val error = pigeonVar_list[0] as Long?
+      val data = pigeonVar_list[1] as ByteArray?
+      return ReportReply(error, data)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      error,
+      data,
+    )
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class SdpConfig (
   val macSdpConfig: MacSdpConfig? = null,
@@ -109,16 +145,26 @@ private open class BluetoothHidManagerPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          SdpConfig.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          ReportType.ofRaw(it.toInt())
         }
       }
       130.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          MacSdpConfig.fromList(it)
+          ReportReply.fromList(it)
         }
       }
       131.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          SdpConfig.fromList(it)
+        }
+      }
+      132.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          MacSdpConfig.fromList(it)
+        }
+      }
+      133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           AndroidSdpConfig.fromList(it)
         }
@@ -128,16 +174,24 @@ private open class BluetoothHidManagerPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is SdpConfig -> {
+      is ReportType -> {
         stream.write(129)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw)
       }
-      is MacSdpConfig -> {
+      is ReportReply -> {
         stream.write(130)
         writeValue(stream, value.toList())
       }
-      is AndroidSdpConfig -> {
+      is SdpConfig -> {
         stream.write(131)
+        writeValue(stream, value.toList())
+      }
+      is MacSdpConfig -> {
+        stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is AndroidSdpConfig -> {
+        stream.write(133)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -241,6 +295,71 @@ interface BluetoothHidManagerPlatformChannel {
           channel.setMessageHandler(null)
         }
       }
+    }
+  }
+}
+/**
+ * Native -> Flutter
+ *
+ * Generated class from Pigeon that represents Flutter messages that can be called from Kotlin.
+ */
+class BluetoothHidManagerCallbackChannel(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
+  companion object {
+    /** The codec used by BluetoothHidManagerCallbackChannel. */
+    val codec: MessageCodec<Any?> by lazy {
+      BluetoothHidManagerPigeonCodec()
+    }
+  }
+  fun onConnectionStateChanged(deviceIdArg: String, connectedArg: Boolean, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onConnectionStateChanged$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(deviceIdArg, connectedArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(createConnectionError(channelName)))
+      } 
+    }
+  }
+  fun onSdpServiceRegistrationUpdate(registeredArg: Boolean, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onSdpServiceRegistrationUpdate$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(registeredArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(createConnectionError(channelName)))
+      } 
+    }
+  }
+  fun onGetReport(deviceIdArg: String, typeArg: ReportType, bufferSizeArg: Long, callback: (Result<ReportReply?>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onGetReport$separatedMessageChannelSuffix"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(deviceIdArg, typeArg, bufferSizeArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          val output = it[0] as ReportReply?
+          callback(Result.success(output))
+        }
+      } else {
+        callback(Result.failure(createConnectionError(channelName)))
+      } 
     }
   }
 }

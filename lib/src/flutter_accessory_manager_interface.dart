@@ -9,6 +9,9 @@ abstract class FlutterAccessoryManagerInterface {
   static AccessoryCallback? accessoryDisconnected;
   static BluetoothDeviceCallback? onBluetoothDeviceDiscover;
   static BluetoothDeviceCallback? onBluetoothDeviceRemoved;
+  static ConnectionChangeCallback? onConnectionStateChanged;
+  static GetReportCallback? onGetReport;
+  static SdpServiceRegistrationUpdateCallback? onSdpServiceRegistrationUpdate;
 
   Future<void> showBluetoothAccessoryPicker({
     List<String>? withNames,
@@ -60,3 +63,11 @@ abstract class FlutterAccessoryManagerInterface {
 typedef AccessoryCallback = void Function(EAAccessory accessory);
 
 typedef BluetoothDeviceCallback = void Function(BluetoothDevice device);
+
+typedef ConnectionChangeCallback = void Function(
+    String deviceId, bool connected);
+
+typedef GetReportCallback = ReportReply? Function(
+    String deviceId, ReportType type, int bufferSize);
+
+typedef SdpServiceRegistrationUpdateCallback = void Function(bool registered);

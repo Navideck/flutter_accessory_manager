@@ -37,6 +37,10 @@ private func wrapError(_ error: Any) -> [Any?] {
   ]
 }
 
+private func createConnectionError(withChannelName channelName: String) -> PigeonError {
+  return PigeonError(code: "channel-error", message: "Unable to establish connection on channel: '\(channelName)'.", details: "")
+}
+
 private func isNullish(_ value: Any?) -> Bool {
   return value is NSNull || value == nil
 }
@@ -44,6 +48,36 @@ private func isNullish(_ value: Any?) -> Bool {
 private func nilOrValue<T>(_ value: Any?) -> T? {
   if value is NSNull { return nil }
   return value as! T?
+}
+
+enum ReportType: Int {
+  case input = 0
+  case output = 1
+  case feature = 2
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct ReportReply {
+  var error: Int64? = nil
+  var data: FlutterStandardTypedData? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ReportReply? {
+    let error: Int64? = nilOrValue(pigeonVar_list[0])
+    let data: FlutterStandardTypedData? = nilOrValue(pigeonVar_list[1])
+
+    return ReportReply(
+      error: error,
+      data: data
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      error,
+      data,
+    ]
+  }
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
@@ -134,10 +168,18 @@ private class BluetoothHidManagerPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
-      return SdpConfig.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return ReportType(rawValue: enumResultAsInt)
+      }
+      return nil
     case 130:
-      return MacSdpConfig.fromList(self.readValue() as! [Any?])
+      return ReportReply.fromList(self.readValue() as! [Any?])
     case 131:
+      return SdpConfig.fromList(self.readValue() as! [Any?])
+    case 132:
+      return MacSdpConfig.fromList(self.readValue() as! [Any?])
+    case 133:
       return AndroidSdpConfig.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -147,14 +189,20 @@ private class BluetoothHidManagerPigeonCodecReader: FlutterStandardReader {
 
 private class BluetoothHidManagerPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? SdpConfig {
+    if let value = value as? ReportType {
       super.writeByte(129)
-      super.writeValue(value.toList())
-    } else if let value = value as? MacSdpConfig {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? ReportReply {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? AndroidSdpConfig {
+    } else if let value = value as? SdpConfig {
       super.writeByte(131)
+      super.writeValue(value.toList())
+    } else if let value = value as? MacSdpConfig {
+      super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? AndroidSdpConfig {
+      super.writeByte(133)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -257,6 +305,80 @@ class BluetoothHidManagerPlatformChannelSetup {
       }
     } else {
       sendReportChannel.setMessageHandler(nil)
+    }
+  }
+}
+/// Native -> Flutter
+///
+/// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
+protocol BluetoothHidManagerCallbackChannelProtocol {
+  func onConnectionStateChanged(deviceId deviceIdArg: String, connected connectedArg: Bool, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onSdpServiceRegistrationUpdate(registered registeredArg: Bool, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onGetReport(deviceId deviceIdArg: String, type typeArg: ReportType, bufferSize bufferSizeArg: Int64, completion: @escaping (Result<ReportReply?, PigeonError>) -> Void)
+}
+class BluetoothHidManagerCallbackChannel: BluetoothHidManagerCallbackChannelProtocol {
+  private let binaryMessenger: FlutterBinaryMessenger
+  private let messageChannelSuffix: String
+  init(binaryMessenger: FlutterBinaryMessenger, messageChannelSuffix: String = "") {
+    self.binaryMessenger = binaryMessenger
+    self.messageChannelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+  }
+  var codec: BluetoothHidManagerPigeonCodec {
+    return BluetoothHidManagerPigeonCodec.shared
+  }
+  func onConnectionStateChanged(deviceId deviceIdArg: String, connected connectedArg: Bool, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onConnectionStateChanged\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([deviceIdArg, connectedArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(Void()))
+      }
+    }
+  }
+  func onSdpServiceRegistrationUpdate(registered registeredArg: Bool, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onSdpServiceRegistrationUpdate\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([registeredArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(Void()))
+      }
+    }
+  }
+  func onGetReport(deviceId deviceIdArg: String, type typeArg: ReportType, bufferSize bufferSizeArg: Int64, completion: @escaping (Result<ReportReply?, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onGetReport\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([deviceIdArg, typeArg, bufferSizeArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        let result: ReportReply? = nilOrValue(listResponse[0])
+        completion(.success(result))
+      }
     }
   }
 }

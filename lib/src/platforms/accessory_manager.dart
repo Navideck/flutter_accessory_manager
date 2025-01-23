@@ -9,7 +9,8 @@ class AccessoryManager extends FlutterAccessoryManagerInterface {
   static AccessoryManager get instance => _instance ??= AccessoryManager._();
 
   AccessoryManager._() {
-    FlutterAccessoryCallbackChannel.setUp(_CallbackHandler());
+    FlutterAccessoryCallbackChannel.setUp(_AccessoryCallbackHandler());
+    BluetoothHidManagerCallbackChannel.setUp(_HidCallbackHandler());
   }
 
   static final _accessoryManagerChannel = FlutterAccessoryPlatformChannel();
@@ -56,7 +57,7 @@ class AccessoryManager extends FlutterAccessoryManagerInterface {
 }
 
 // Handle callbacks from Native to Flutter
-class _CallbackHandler extends FlutterAccessoryCallbackChannel {
+class _AccessoryCallbackHandler extends FlutterAccessoryCallbackChannel {
   @override
   void onDeviceDiscover(BluetoothDevice device) {
     FlutterAccessoryManagerInterface.onBluetoothDeviceDiscover?.call(device);
@@ -65,5 +66,29 @@ class _CallbackHandler extends FlutterAccessoryCallbackChannel {
   @override
   void onDeviceRemoved(BluetoothDevice device) {
     FlutterAccessoryManagerInterface.onBluetoothDeviceRemoved?.call(device);
+  }
+}
+
+class _HidCallbackHandler extends BluetoothHidManagerCallbackChannel {
+  @override
+  void onConnectionStateChanged(String deviceId, bool connected) {
+    FlutterAccessoryManagerInterface.onConnectionStateChanged
+        ?.call(deviceId, connected);
+  }
+
+  @override
+  ReportReply? onGetReport(String deviceId, ReportType type, int bufferSize) {
+    return FlutterAccessoryManagerInterface.onGetReport?.call(
+      deviceId,
+      type,
+      bufferSize,
+    );
+  }
+
+  @override
+  void onSdpServiceRegistrationUpdate(bool registered) {
+    FlutterAccessoryManagerInterface.onSdpServiceRegistrationUpdate?.call(
+      registered,
+    );
   }
 }

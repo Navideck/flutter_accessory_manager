@@ -5,5 +5,5 @@ export 'package:flutter_accessory_manager/src/generated/external_accessory.g.dar
 export 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart'
     show BluetoothDevice;
 export 'package:flutter_accessory_manager/src/generated/bluetooth_hid_manager.g.dart'
-    show SdpConfig, MacSdpConfig, AndroidSdpConfig;
+    show SdpConfig, MacSdpConfig, AndroidSdpConfig, ReportReply, ReportType;
 export 'package:flutter_accessory_manager/src/flutter_accessory_manager.dart';

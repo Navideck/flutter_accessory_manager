@@ -36,6 +36,24 @@ abstract class BluetoothHidManagerPlatformChannel {
   void sendReport(String deviceId, Uint8List data);
 }
 
+/// Native -> Flutter
+@FlutterApi()
+abstract class BluetoothHidManagerCallbackChannel {
+  void onConnectionStateChanged(String deviceId, bool connected);
+
+  void onSdpServiceRegistrationUpdate(bool registered);
+
+  ReportReply? onGetReport(String deviceId, ReportType type, int bufferSize);
+}
+
+class ReportReply {
+  int? error;
+  Uint8List? data;
+  ReportReply({this.error, this.data});
+}
+
+enum ReportType { input, output, feature }
+
 class SdpConfig {
   MacSdpConfig? macSdpConfig;
   AndroidSdpConfig? androidSdpConfig;

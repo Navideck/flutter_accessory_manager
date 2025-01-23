@@ -55,6 +55,28 @@ class _MyAppState extends State<MyApp> {
       setState(() {});
     };
 
+    FlutterAccessoryManager.onConnectionStateChanged =
+        (String deviceId, bool connected) {
+      print("Connection State Changed $deviceId $connected");
+    };
+
+    FlutterAccessoryManager.onGetReport =
+        (String deviceId, reportType, reportId) {
+      print("Get Report $deviceId $reportType $reportId");
+
+      if (reportType != ReportType.input) {
+        return null; // Reply with error
+      }
+
+      return ReportReply(
+        data: null, // Reply with data
+      );
+    };
+
+    FlutterAccessoryManager.onSdpServiceRegistrationUpdate = (bool registered) {
+      print("Sdp Service Registered $registered");
+    };
+
     super.initState();
   }
 

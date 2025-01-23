@@ -5,11 +5,7 @@ import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothDevice.BOND_BONDED
-import android.bluetooth.BluetoothHidDevice
-import android.bluetooth.BluetoothHidDeviceAppSdpSettings
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
-import android.bluetooth.BluetoothProfile.ServiceListener
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Context.RECEIVER_EXPORTED
@@ -19,41 +15,49 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
-import androidx.annotation.RequiresApi
-import androidx.core.content.ContextCompat
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import java.util.UUID
 
 private const val TAG = "FlutterAccessoryManagerPlugin"
+var bluetoothDevicesCache = mutableMapOf<String, BluetoothDevice>()
+var accessoryManagerThreadHandler: Handler? = null
 
 @SuppressLint("MissingPermission")
-class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
-    BluetoothHidManagerPlatformChannel, FlutterPlugin,
+class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPlugin,
     ActivityAware {
     private var callbackChannel: FlutterAccessoryCallbackChannel? = null
-    private var mainThreadHandler: Handler? = null
     private var bluetoothAdapter: BluetoothAdapter? = null
-    private var devices = mutableMapOf<String, BluetoothDevice>()
     private val pairResultFutures = mutableMapOf<String, (Result<Boolean>) -> Unit>()
     private var activity: Activity? = null
-    private var mBtHidDevice: BluetoothHidDevice? = null
     private val actionBluetoothSelected =
         "android.bluetooth.devicepicker.action.DEVICE_SELECTED"
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        FlutterAccessoryPlatformChannel.setUp(flutterPluginBinding.binaryMessenger, this)
-        BluetoothHidManagerPlatformChannel.setUp(flutterPluginBinding.binaryMessenger, this)
-
-        callbackChannel = FlutterAccessoryCallbackChannel(flutterPluginBinding.binaryMessenger)
-        mainThreadHandler = Handler(Looper.getMainLooper())
+        accessoryManagerThreadHandler = Handler(Looper.getMainLooper())
         val context = flutterPluginBinding.applicationContext
 
         val bluetoothManager =
             context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?
         bluetoothAdapter = bluetoothManager?.adapter
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && bluetoothAdapter != null) {
+            val bluetoothHidManager = BluetoothHidManager(
+                context,
+                bluetoothAdapter!!,
+                BluetoothHidManagerCallbackChannel(flutterPluginBinding.binaryMessenger)
+            )
+            BluetoothHidManagerPlatformChannel.setUp(
+                flutterPluginBinding.binaryMessenger,
+                bluetoothHidManager,
+            )
+        } else {
+            Log.e(TAG, "BluetoothHidManager not initialized")
+        }
+
+        callbackChannel = FlutterAccessoryCallbackChannel(flutterPluginBinding.binaryMessenger)
+        FlutterAccessoryPlatformChannel.setUp(flutterPluginBinding.binaryMessenger, this)
+
 
         val intentFilter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         intentFilter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
@@ -65,7 +69,7 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        mainThreadHandler = null
+        accessoryManagerThreadHandler = null
         callbackChannel = null
         bluetoothAdapter = null
         binding.applicationContext.unregisterReceiver(broadcastReceiver)
@@ -85,110 +89,6 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
             callback(Result.failure(FlutterError("Failed", e.toString())))
         }
     }
-
-    override fun connect(deviceId: String, callback: (Result<Unit>) -> Unit) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val bluetoothDevice = getBluetoothDevice(deviceId)
-                mBtHidDevice?.connect(bluetoothDevice)
-                callback(Result.success(Unit))
-            } else {
-                throw FlutterError("Not Supported")
-            }
-        } catch (e: FlutterError) {
-            callback(Result.failure(e))
-        } catch (e: Exception) {
-            callback(Result.failure(FlutterError(code = "Error", message = e.toString())))
-        }
-    }
-
-    override fun disconnect(deviceId: String, callback: (Result<Unit>) -> Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val device = mBtHidDevice?.connectedDevices?.first { it.name == deviceId }
-            if (device == null) {
-                callback(Result.failure(FlutterError("NotFound", "Device not connected")))
-                return
-            }
-            mBtHidDevice?.disconnect(device)
-            callback(Result.success(Unit))
-        } else {
-            callback(Result.failure(FlutterError("Not Supported")))
-        }
-    }
-
-    override fun sendReport(deviceId: String, data: ByteArray) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val device = mBtHidDevice?.connectedDevices?.firstOrNull { it.address == deviceId }
-            if (device == null) {
-                throw FlutterError("NotFound", "Device not connected")
-            }
-            mBtHidDevice?.sendReport(device, 0, data)
-        } else {
-            throw FlutterError("Not Supported")
-        }
-    }
-
-    override fun setupSdp(config: SdpConfig) {
-        val adapter = bluetoothAdapter ?: throw FlutterError("NoAdapter")
-        val context = activity?.applicationContext ?: throw FlutterError("NoContext")
-        val androidConfig = config.androidSdpConfig ?: throw FlutterError("InvalidAndroidConfig")
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            throw FlutterError("NotSupported", message = "Not supported on < P")
-        }
-
-        adapter.getProfileProxy(
-            context,
-            object : ServiceListener {
-                @SuppressLint("NewApi")
-                override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
-                    if (profile != BluetoothProfile.HID_DEVICE) return
-                    Log.d(TAG, "Got HID device")
-                    mBtHidDevice = proxy as BluetoothHidDevice
-                    mBtHidDevice?.registerApp(
-                        BluetoothHidDeviceAppSdpSettings(
-                            androidConfig.name,
-                            androidConfig.description,
-                            androidConfig.provider,
-                            androidConfig.subclass.toByte(),
-                            androidConfig.descriptors,
-                        ),
-                        null,
-                        null,
-                        ContextCompat.getMainExecutor(context),
-                        bluetoothHidCallback
-                    )
-                }
-
-                override fun onServiceDisconnected(profile: Int) {
-                    if (profile != BluetoothProfile.HID_DEVICE) return
-                    Log.d(TAG, "Lost HID device")
-                    mBtHidDevice = null
-                }
-            },
-            BluetoothProfile.HID_DEVICE
-        )
-    }
-
-    @RequiresApi(Build.VERSION_CODES.P)
-    val bluetoothHidCallback = object : BluetoothHidDevice.Callback() {
-        override fun onGetReport(
-            device: BluetoothDevice,
-            type: Byte,
-            id: Byte,
-            bufferSize: Int,
-        ) {
-            Log.e(TAG, "onGetReport: device=$device type=$type id=$id bufferSize=$bufferSize")
-        }
-
-        override fun onConnectionStateChanged(
-            device: BluetoothDevice,
-            state: Int,
-        ) {
-            Log.e(TAG, "onConnectionStateChanged: device=$device state=$state")
-        }
-    }
-
 
     override fun startScan() {
         val adapter = bluetoothAdapter ?: return
@@ -237,7 +137,10 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
     override fun pair(address: String, callback: (Result<Boolean>) -> Unit) {
         try {
             val remoteDevice =
-                devices[address] ?: throw FlutterError("NotFound", "Device not found, please scan")
+                bluetoothDevicesCache[address] ?: throw FlutterError(
+                    "NotFound",
+                    "Device not found, please scan"
+                )
             val pendingFuture = pairResultFutures.remove(address)
 
             // If already paired, return and complete pending futures
@@ -292,33 +195,6 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
         device.createBond()
     }
 
-    // Try to get bluetooth device from, scanResultCache or hidConnected Devices or bondedDevices
-    private fun getBluetoothDevice(deviceId: String): BluetoothDevice {
-        val remoteDevice = devices[deviceId];
-        if (remoteDevice != null) {
-            return remoteDevice
-        }
-
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            for (device in mBtHidDevice?.getDevicesMatchingConnectionStates(
-                intArrayOf(BluetoothProfile.STATE_CONNECTING, BluetoothProfile.STATE_CONNECTED)
-            ) ?: mutableListOf()) {
-                if (device.address == deviceId) {
-                    return device
-                }
-            }
-        }
-
-        for (device in bluetoothAdapter?.bondedDevices?.toMutableList() ?: mutableListOf()) {
-            if (device.address == deviceId) {
-                return device
-            }
-        }
-
-        throw FlutterError("NotFound", "Device not found, please scan")
-    }
-
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val device: BluetoothDevice? =
@@ -343,8 +219,8 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
                     if (device.type == BluetoothDevice.DEVICE_TYPE_LE) return
                     val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE)
                     // Cache the result
-                    devices[device.address] = device
-                    mainThreadHandler?.post {
+                    bluetoothDevicesCache[device.address] = device
+                    accessoryManagerThreadHandler?.post {
                         callbackChannel?.onDeviceDiscover(deviceArg = device.toFlutter(rssi.toLong())) {}
                     }
                 }
@@ -384,7 +260,6 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel,
             paired = this.bondState == BluetoothDevice.BOND_BONDED
         );
     }
-
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity

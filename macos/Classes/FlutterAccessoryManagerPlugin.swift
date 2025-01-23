@@ -7,8 +7,9 @@ import IOBluetooth
 import IOKit.hid
 
 public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
-    var callbackChannel: FlutterAccessoryCallbackChannel
-
+    var accessroyManagerCallbackChannel: FlutterAccessoryCallbackChannel
+    var hidCallbackChannel: BluetoothHidManagerCallbackChannel
+    
     var service: IOBluetoothSDPServiceRecord?
     var delegateMap: [String: BTDevice] = [:]
     lazy var inquiry: IOBluetoothDeviceInquiry = .init(delegate: self)
@@ -18,15 +19,17 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     // This also does not work on native apps
     private lazy var pairingController = IOBluetoothPairingControllerObjC()
 
-    init(callbackChannel: FlutterAccessoryCallbackChannel) {
-        self.callbackChannel = callbackChannel
+    init(callbackChannel: FlutterAccessoryCallbackChannel, hidCallback: BluetoothHidManagerCallbackChannel) {
+        self.accessroyManagerCallbackChannel = callbackChannel
+        self.hidCallbackChannel = hidCallback
         super.init()
     }
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let messenger: FlutterBinaryMessenger = registrar.messenger
         let callbackChannel = FlutterAccessoryCallbackChannel(binaryMessenger: messenger)
-        let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel)
+        let hidCallback = BluetoothHidManagerCallbackChannel(binaryMessenger: messenger)
+        let instance = FlutterAccessoryManagerPlugin(callbackChannel: callbackChannel, hidCallback: hidCallback)
         FlutterAccessoryPlatformChannelSetup.setUp(binaryMessenger: messenger, api: instance)
         BluetoothHidManagerPlatformChannelSetup.setUp(binaryMessenger: messenger, api: instance)
     }
@@ -177,7 +180,7 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
     }
 
     @objc public func deviceInquiryDeviceFound(_: IOBluetoothDeviceInquiry, device: IOBluetoothDevice) {
-        callbackChannel.onDeviceDiscover(device: device.toBLuetoothDevice()) { _ in }
+        accessroyManagerCallbackChannel.onDeviceDiscover(device: device.toBLuetoothDevice()) { _ in }
     }
 
     @objc public func deviceInquiryUpdatingDeviceNamesStarted(_: IOBluetoothDeviceInquiry, devicesRemaining: UInt32) {

@@ -15,6 +15,48 @@ PlatformException _createConnectionError(String channelName) {
   );
 }
 
+List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty = false}) {
+  if (empty) {
+    return <Object?>[];
+  }
+  if (error == null) {
+    return <Object?>[result];
+  }
+  return <Object?>[error.code, error.message, error.details];
+}
+
+enum ReportType {
+  input,
+  output,
+  feature,
+}
+
+class ReportReply {
+  ReportReply({
+    this.error,
+    this.data,
+  });
+
+  int? error;
+
+  Uint8List? data;
+
+  Object encode() {
+    return <Object?>[
+      error,
+      data,
+    ];
+  }
+
+  static ReportReply decode(Object result) {
+    result as List<Object?>;
+    return ReportReply(
+      error: result[0] as int?,
+      data: result[1] as Uint8List?,
+    );
+  }
+}
+
 class SdpConfig {
   SdpConfig({
     this.macSdpConfig,
@@ -116,14 +158,20 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is SdpConfig) {
+    }    else if (value is ReportType) {
       buffer.putUint8(129);
-      writeValue(buffer, value.encode());
-    }    else if (value is MacSdpConfig) {
+      writeValue(buffer, value.index);
+    }    else if (value is ReportReply) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    }    else if (value is AndroidSdpConfig) {
+    }    else if (value is SdpConfig) {
       buffer.putUint8(131);
+      writeValue(buffer, value.encode());
+    }    else if (value is MacSdpConfig) {
+      buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    }    else if (value is AndroidSdpConfig) {
+      buffer.putUint8(133);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -134,10 +182,15 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129: 
-        return SdpConfig.decode(readValue(buffer)!);
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : ReportType.values[value];
       case 130: 
-        return MacSdpConfig.decode(readValue(buffer)!);
+        return ReportReply.decode(readValue(buffer)!);
       case 131: 
+        return SdpConfig.decode(readValue(buffer)!);
+      case 132: 
+        return MacSdpConfig.decode(readValue(buffer)!);
+      case 133: 
         return AndroidSdpConfig.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -244,6 +297,105 @@ class BluetoothHidManagerPlatformChannel {
       );
     } else {
       return;
+    }
+  }
+}
+
+/// Native -> Flutter
+abstract class BluetoothHidManagerCallbackChannel {
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  void onConnectionStateChanged(String deviceId, bool connected);
+
+  void onSdpServiceRegistrationUpdate(bool registered);
+
+  ReportReply? onGetReport(String deviceId, ReportType type, int bufferSize);
+
+  static void setUp(BluetoothHidManagerCallbackChannel? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
+    messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onConnectionStateChanged$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onConnectionStateChanged was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final String? arg_deviceId = (args[0] as String?);
+          assert(arg_deviceId != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onConnectionStateChanged was null, expected non-null String.');
+          final bool? arg_connected = (args[1] as bool?);
+          assert(arg_connected != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onConnectionStateChanged was null, expected non-null bool.');
+          try {
+            api.onConnectionStateChanged(arg_deviceId!, arg_connected!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onSdpServiceRegistrationUpdate$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onSdpServiceRegistrationUpdate was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final bool? arg_registered = (args[0] as bool?);
+          assert(arg_registered != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onSdpServiceRegistrationUpdate was null, expected non-null bool.');
+          try {
+            api.onSdpServiceRegistrationUpdate(arg_registered!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onGetReport$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onGetReport was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final String? arg_deviceId = (args[0] as String?);
+          assert(arg_deviceId != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onGetReport was null, expected non-null String.');
+          final ReportType? arg_type = (args[1] as ReportType?);
+          assert(arg_type != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onGetReport was null, expected non-null ReportType.');
+          final int? arg_bufferSize = (args[2] as int?);
+          assert(arg_bufferSize != null,
+              'Argument for dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerCallbackChannel.onGetReport was null, expected non-null int.');
+          try {
+            final ReportReply? output = api.onGetReport(arg_deviceId!, arg_type!, arg_bufferSize!);
+            return wrapResponse(result: output);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
     }
   }
 }

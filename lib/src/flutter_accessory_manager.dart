@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_accessory_manager/flutter_accessory_manager.dart';
 import 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
-import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
 import 'package:flutter_accessory_manager/src/platforms/accessory_manager.dart';
 import 'package:flutter_accessory_manager/src/platforms/accessory_manager_bluez.dart';
 import 'package:flutter_accessory_manager/src/platforms/external_accessory.dart';
@@ -58,6 +57,19 @@ class FlutterAccessoryManager {
 
   static set onBluetoothDeviceRemoved(BluetoothDeviceCallback? callback) {
     FlutterAccessoryManagerInterface.onBluetoothDeviceRemoved = callback;
+  }
+
+  static set onConnectionStateChanged(ConnectionChangeCallback? callback) {
+    FlutterAccessoryManagerInterface.onConnectionStateChanged = callback;
+  }
+
+  static set onGetReport(GetReportCallback? callback) {
+    FlutterAccessoryManagerInterface.onGetReport = callback;
+  }
+
+  static set onSdpServiceRegistrationUpdate(
+      SdpServiceRegistrationUpdateCallback? callback) {
+    FlutterAccessoryManagerInterface.onSdpServiceRegistrationUpdate = callback;
   }
 
   static FlutterAccessoryManagerInterface _defaultPlatform() {
