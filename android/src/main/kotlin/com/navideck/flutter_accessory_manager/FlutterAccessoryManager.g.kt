@@ -49,12 +49,48 @@ class FlutterError (
   val details: Any? = null
 ) : Throwable()
 
+enum class DeviceClass(val raw: Int) {
+  AUDIO_VIDEO(0),
+  COMPUTER(1),
+  HEALTH(2),
+  IMAGING(3),
+  MISC(4),
+  NETWORKING(5),
+  PERIPHERAL(6),
+  PHONE(7),
+  TOY(8),
+  UNCATEGORIZED(9),
+  WEARABLE(10);
+
+  companion object {
+    fun ofRaw(raw: Int): DeviceClass? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
+enum class DeviceType(val raw: Int) {
+  CLASSIC(0),
+  LE(1),
+  DUAL(2),
+  UNKNOWN(3);
+
+  companion object {
+    fun ofRaw(raw: Int): DeviceType? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class BluetoothDevice (
   val address: String,
   val name: String? = null,
   val paired: Boolean,
-  val rssi: Long
+  val isConnectedWithHid: Boolean? = null,
+  val rssi: Long,
+  val deviceClass: DeviceClass? = null,
+  val deviceType: DeviceType? = null
 )
  {
   companion object {
@@ -62,8 +98,11 @@ data class BluetoothDevice (
       val address = pigeonVar_list[0] as String
       val name = pigeonVar_list[1] as String?
       val paired = pigeonVar_list[2] as Boolean
-      val rssi = pigeonVar_list[3] as Long
-      return BluetoothDevice(address, name, paired, rssi)
+      val isConnectedWithHid = pigeonVar_list[3] as Boolean?
+      val rssi = pigeonVar_list[4] as Long
+      val deviceClass = pigeonVar_list[5] as DeviceClass?
+      val deviceType = pigeonVar_list[6] as DeviceType?
+      return BluetoothDevice(address, name, paired, isConnectedWithHid, rssi, deviceClass, deviceType)
     }
   }
   fun toList(): List<Any?> {
@@ -71,7 +110,10 @@ data class BluetoothDevice (
       address,
       name,
       paired,
+      isConnectedWithHid,
       rssi,
+      deviceClass,
+      deviceType,
     )
   }
 }
@@ -79,6 +121,16 @@ private open class FlutterAccessoryManagerPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          DeviceClass.ofRaw(it.toInt())
+        }
+      }
+      130.toByte() -> {
+        return (readValue(buffer) as Long?)?.let {
+          DeviceType.ofRaw(it.toInt())
+        }
+      }
+      131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           BluetoothDevice.fromList(it)
         }
@@ -88,8 +140,16 @@ private open class FlutterAccessoryManagerPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is BluetoothDevice -> {
+      is DeviceClass -> {
         stream.write(129)
+        writeValue(stream, value.raw)
+      }
+      is DeviceType -> {
+        stream.write(130)
+        writeValue(stream, value.raw)
+      }
+      is BluetoothDevice -> {
+        stream.write(131)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)

@@ -9,7 +9,7 @@ import IOKit.hid
 public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     var accessroyManagerCallbackChannel: FlutterAccessoryCallbackChannel
     var hidCallbackChannel: BluetoothHidManagerCallbackChannel
-    
+
     var service: IOBluetoothSDPServiceRecord?
     var delegateMap: [String: BTDevice] = [:]
     lazy var inquiry: IOBluetoothDeviceInquiry = .init(delegate: self)
@@ -20,8 +20,8 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     private lazy var pairingController = IOBluetoothPairingControllerObjC()
 
     init(callbackChannel: FlutterAccessoryCallbackChannel, hidCallback: BluetoothHidManagerCallbackChannel) {
-        self.accessroyManagerCallbackChannel = callbackChannel
-        self.hidCallbackChannel = hidCallback
+        accessroyManagerCallbackChannel = callbackChannel
+        hidCallbackChannel = hidCallback
         super.init()
     }
 
@@ -36,7 +36,6 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
 }
 
 extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
-    
     func setupSdp(config: SdpConfig) throws {
         if let macConfig = config.macSdpConfig {
             try setupBluetoothSdpConfig(config: macConfig)
@@ -44,7 +43,7 @@ extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
             throw PigeonError(code: "ConfigError", message: "MacConfig not provided", details: nil)
         }
     }
-    
+
     func connect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
         guard let device = IOBluetoothDevice(addressString: deviceId) else {
             completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
@@ -69,8 +68,7 @@ extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
         // Setup L2CAP channels
         openChannels(device: device, completion: completion)
     }
-    
-    
+
     func disconnect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
         guard let device = IOBluetoothDevice(addressString: deviceId) else {
             completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
@@ -84,7 +82,6 @@ extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
         let errorString = String(cString: mach_error_string(Int32(ioReturn)))
         completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
     }
-
 
     func sendReport(deviceId: String, data: FlutterStandardTypedData) throws {
         let byteArray = [UInt8](data.data)
@@ -115,7 +112,7 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
         guard let paired = IOBluetoothDevice.pairedDevices() else { return [] }
         return paired.map { device -> [BluetoothDevice] in
             guard let d = device as? IOBluetoothDevice else { return [] }
-            return [d.toBLuetoothDevice()]
+            return [d.toBLuetoothDevice(delegateMap)]
         }.flatMap { $0 }
     }
 
@@ -180,7 +177,7 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
     }
 
     @objc public func deviceInquiryDeviceFound(_: IOBluetoothDeviceInquiry, device: IOBluetoothDevice) {
-        accessroyManagerCallbackChannel.onDeviceDiscover(device: device.toBLuetoothDevice()) { _ in }
+        accessroyManagerCallbackChannel.onDeviceDiscover(device: device.toBLuetoothDevice(delegateMap)) { _ in }
     }
 
     @objc public func deviceInquiryUpdatingDeviceNamesStarted(_: IOBluetoothDeviceInquiry, devicesRemaining: UInt32) {
@@ -347,12 +344,15 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
 }
 
 extension IOBluetoothDevice {
-    func toBLuetoothDevice() -> BluetoothDevice {
+    func toBLuetoothDevice(_ delegateMap:[String: BTDevice]) -> BluetoothDevice {
         return BluetoothDevice(
             address: addressString,
             name: name,
             paired: isPaired(),
-            rssi: Int64(rssi())
+            isConnectedWithHid: delegateMap[addressString]?.interruptChannel != nil,
+            rssi: Int64(rssi()),
+            deviceClass: deviceClassMajor.toDeviceClass(),
+            deviceType: nil
         )
     }
 }
@@ -376,4 +376,35 @@ class BTDevice {
     var device: IOBluetoothDevice?
     var interruptChannel: IOBluetoothL2CAPChannel?
     var controlChannel: IOBluetoothL2CAPChannel?
+}
+
+extension BluetoothDeviceClassMajor {
+    func toDeviceClass() -> DeviceClass? {
+        switch Int(self) {
+        case kBluetoothDeviceClassMajorComputer:
+            return DeviceClass.computer
+        case kBluetoothDeviceClassMajorPhone:
+            return DeviceClass.phone
+        case kBluetoothDeviceClassMajorLANAccessPoint:
+            return DeviceClass.networking
+        case kBluetoothDeviceClassMajorAudio:
+            return DeviceClass.audioVideo
+        case kBluetoothDeviceClassMajorPeripheral:
+            return DeviceClass.peripheral
+        case kBluetoothDeviceClassMajorWearable:
+            return DeviceClass.wearable
+        case kBluetoothDeviceClassMajorToy:
+            return DeviceClass.toy
+        case kBluetoothDeviceClassMajorHealth:
+            return DeviceClass.health
+        case kBluetoothDeviceClassMajorUnclassified:
+            return DeviceClass.uncategorized
+        case kBluetoothDeviceClassMajorMiscellaneous:
+            return DeviceClass.misc
+        case kBluetoothDeviceClassMajorImaging:
+            return DeviceClass.imaging
+        default:
+            return nil
+        }
+    }
 }

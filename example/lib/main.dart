@@ -27,6 +27,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   List<BluetoothDevice> devices = [];
   bool isScanning = false;
+  bool showDevicesWithoutName = false;
 
   @override
   void initState() {
@@ -39,14 +40,7 @@ class _MyAppState extends State<MyApp> {
     };
 
     FlutterAccessoryManager.onBluetoothDeviceDiscover = (device) {
-      print("Device Discover ${device.name} ${device.address}");
-      int index = devices.indexWhere((e) => e.address == device.address);
-      if (index == -1) {
-        devices.add(device);
-      } else {
-        devices[index] = device;
-      }
-      setState(() {});
+      onBluetoothDeviceDiscover(device);
     };
 
     FlutterAccessoryManager.onBluetoothDeviceRemoved = (device) {
@@ -58,6 +52,7 @@ class _MyAppState extends State<MyApp> {
     FlutterAccessoryManager.onConnectionStateChanged =
         (String deviceId, bool connected) {
       print("Connection State Changed $deviceId $connected");
+      showSnackbar("$deviceId : ${connected ? 'Connected' : 'Disconnected'}");
     };
 
     FlutterAccessoryManager.onGetReport =
@@ -75,9 +70,24 @@ class _MyAppState extends State<MyApp> {
 
     FlutterAccessoryManager.onSdpServiceRegistrationUpdate = (bool registered) {
       print("Sdp Service Registered $registered");
+      showSnackbar("Sdp Service Registered $registered");
     };
 
     super.initState();
+  }
+
+  void onBluetoothDeviceDiscover(device) {
+    if (!showDevicesWithoutName && device.name == null || device.name == "") {
+      return;
+    }
+    print("Device Discover ${device.name} ${device.address}");
+    int index = devices.indexWhere((e) => e.address == device.address);
+    if (index == -1) {
+      devices.add(device);
+    } else {
+      devices[index] = device;
+    }
+    setState(() {});
   }
 
   void showSnackbar(message) {
@@ -143,6 +153,7 @@ class _MyAppState extends State<MyApp> {
       );
     } catch (e) {
       print(e);
+      showSnackbar(e);
     }
   }
 
@@ -158,6 +169,24 @@ class _MyAppState extends State<MyApp> {
     0x95, 0x01, //   Report Count (1)
     0x75, 0x10, //   Report Size (16)
     0x81, 0x00, //   Input (Data,Array)
+    0xC0, // End Collection
+
+    // Battery
+    0x05, 0x0C, // Usage page (Consumer)
+    0x09, 0x01, // Usage (Consumer Control)
+    0xA1, 0x01, // Collection (Application)
+    0x85, 32, //    Report ID
+    0x05, 0x01, //    Usage page (Generic Desktop)
+    0x09, 0x06, //    Usage (Keyboard)
+    0xA1, 0x02, //    Collection (Logical)
+    0x05, 0x06, //       Usage page (Generic Device Controls)
+    0x09, 0x20, //       Usage (Battery Strength)
+    0x15, 0x00, //       Logical minimum (0)
+    0x26, 0xff, 0x00, // Logical maximum (255)
+    0x75, 0x08, //       Report size (8)
+    0x95, 0x01, //       Report count (3)
+    0x81, 0x02, //       Input (Data, Variable, Absolute)
+    0xC0, //    End Collection
     0xC0, // End Collection
   ];
 
@@ -257,6 +286,14 @@ class _MyAppState extends State<MyApp> {
               ),
             ],
           ),
+          SwitchListTile.adaptive(
+              title: const Text("Show devices without name"),
+              value: showDevicesWithoutName,
+              onChanged: (value) {
+                setState(() {
+                  showDevicesWithoutName = !showDevicesWithoutName;
+                });
+              }),
           const Divider(),
           Expanded(
             child: ListView.separated(

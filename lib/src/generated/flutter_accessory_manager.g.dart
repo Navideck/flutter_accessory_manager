@@ -25,12 +25,36 @@ List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty
   return <Object?>[error.code, error.message, error.details];
 }
 
+enum DeviceClass {
+  audioVideo,
+  computer,
+  health,
+  imaging,
+  misc,
+  networking,
+  peripheral,
+  phone,
+  toy,
+  uncategorized,
+  wearable,
+}
+
+enum DeviceType {
+  classic,
+  le,
+  dual,
+  unknown,
+}
+
 class BluetoothDevice {
   BluetoothDevice({
     required this.address,
     this.name,
     required this.paired,
+    this.isConnectedWithHid,
     required this.rssi,
+    this.deviceClass,
+    this.deviceType,
   });
 
   String address;
@@ -39,14 +63,23 @@ class BluetoothDevice {
 
   bool paired;
 
+  bool? isConnectedWithHid;
+
   int rssi;
+
+  DeviceClass? deviceClass;
+
+  DeviceType? deviceType;
 
   Object encode() {
     return <Object?>[
       address,
       name,
       paired,
+      isConnectedWithHid,
       rssi,
+      deviceClass,
+      deviceType,
     ];
   }
 
@@ -56,7 +89,10 @@ class BluetoothDevice {
       address: result[0]! as String,
       name: result[1] as String?,
       paired: result[2]! as bool,
-      rssi: result[3]! as int,
+      isConnectedWithHid: result[3] as bool?,
+      rssi: result[4]! as int,
+      deviceClass: result[5] as DeviceClass?,
+      deviceType: result[6] as DeviceType?,
     );
   }
 }
@@ -69,8 +105,14 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is BluetoothDevice) {
+    }    else if (value is DeviceClass) {
       buffer.putUint8(129);
+      writeValue(buffer, value.index);
+    }    else if (value is DeviceType) {
+      buffer.putUint8(130);
+      writeValue(buffer, value.index);
+    }    else if (value is BluetoothDevice) {
+      buffer.putUint8(131);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -81,6 +123,12 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129: 
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : DeviceClass.values[value];
+      case 130: 
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : DeviceType.values[value];
+      case 131: 
         return BluetoothDevice.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);

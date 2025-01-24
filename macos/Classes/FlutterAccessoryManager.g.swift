@@ -68,12 +68,36 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
   return value as! T?
 }
 
+enum DeviceClass: Int {
+  case audioVideo = 0
+  case computer = 1
+  case health = 2
+  case imaging = 3
+  case misc = 4
+  case networking = 5
+  case peripheral = 6
+  case phone = 7
+  case toy = 8
+  case uncategorized = 9
+  case wearable = 10
+}
+
+enum DeviceType: Int {
+  case classic = 0
+  case le = 1
+  case dual = 2
+  case unknown = 3
+}
+
 /// Generated class from Pigeon that represents data sent in messages.
 struct BluetoothDevice {
   var address: String
   var name: String? = nil
   var paired: Bool
+  var isConnectedWithHid: Bool? = nil
   var rssi: Int64
+  var deviceClass: DeviceClass? = nil
+  var deviceType: DeviceType? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -81,13 +105,19 @@ struct BluetoothDevice {
     let address = pigeonVar_list[0] as! String
     let name: String? = nilOrValue(pigeonVar_list[1])
     let paired = pigeonVar_list[2] as! Bool
-    let rssi = pigeonVar_list[3] as! Int64
+    let isConnectedWithHid: Bool? = nilOrValue(pigeonVar_list[3])
+    let rssi = pigeonVar_list[4] as! Int64
+    let deviceClass: DeviceClass? = nilOrValue(pigeonVar_list[5])
+    let deviceType: DeviceType? = nilOrValue(pigeonVar_list[6])
 
     return BluetoothDevice(
       address: address,
       name: name,
       paired: paired,
-      rssi: rssi
+      isConnectedWithHid: isConnectedWithHid,
+      rssi: rssi,
+      deviceClass: deviceClass,
+      deviceType: deviceType
     )
   }
   func toList() -> [Any?] {
@@ -95,7 +125,10 @@ struct BluetoothDevice {
       address,
       name,
       paired,
+      isConnectedWithHid,
       rssi,
+      deviceClass,
+      deviceType,
     ]
   }
 }
@@ -104,6 +137,18 @@ private class FlutterAccessoryManagerPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return DeviceClass(rawValue: enumResultAsInt)
+      }
+      return nil
+    case 130:
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return DeviceType(rawValue: enumResultAsInt)
+      }
+      return nil
+    case 131:
       return BluetoothDevice.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -113,8 +158,14 @@ private class FlutterAccessoryManagerPigeonCodecReader: FlutterStandardReader {
 
 private class FlutterAccessoryManagerPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? BluetoothDevice {
+    if let value = value as? DeviceClass {
       super.writeByte(129)
+      super.writeValue(value.rawValue)
+    } else if let value = value as? DeviceType {
+      super.writeByte(130)
+      super.writeValue(value.rawValue)
+    } else if let value = value as? BluetoothDevice {
+      super.writeByte(131)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)

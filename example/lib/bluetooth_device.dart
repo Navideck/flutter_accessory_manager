@@ -26,14 +26,24 @@ class BluetoothDeviceItem extends StatelessWidget {
   }
 
   Future<void> connect() async {
-    await FlutterAccessoryManager.connect(device.address);
+    try {
+      print("Connecting");
+      await FlutterAccessoryManager.connect(device.address);
+      print("Connected Successfully");
+    } catch (e) {
+      print("ConnectionFailed $e");
+    }
   }
 
   Future<void> sendReport() async {
-    if (Platform.isAndroid) {
-      await sendVolumeDownAndroidReport();
-    } else if (Platform.isMacOS) {
-      await sendVolumeUpMacReport();
+    try {
+      if (Platform.isAndroid) {
+        await sendVolumeDownAndroidReport();
+      } else if (Platform.isMacOS) {
+        await sendVolumeUpMacReport();
+      }
+    } catch (e) {
+      print(e);
     }
   }
 
@@ -83,7 +93,18 @@ class BluetoothDeviceItem extends StatelessWidget {
       children: [
         ListTile(
           title: Text(device.name ?? "N/A"),
-          subtitle: Text(device.address),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(device.address),
+              if (device.deviceClass != null)
+                Text(device.deviceClass!.toString()),
+              if (device.deviceType != null)
+                Text(device.deviceType!.toString()),
+              Text("Paired: ${device.paired}"),
+              Text("ConnectedWithHID: ${device.isConnectedWithHid}"),
+            ],
+          ),
           trailing: Text(device.rssi.toString()),
         ),
         ResponsiveButtonsGrid(
