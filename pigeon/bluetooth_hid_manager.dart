@@ -27,6 +27,8 @@ import 'package:pigeon/pigeon.dart';
 abstract class BluetoothHidManagerPlatformChannel {
   void setupSdp(SdpConfig config);
 
+  void closeSdp();
+
   @async
   void connect(String deviceId);
 

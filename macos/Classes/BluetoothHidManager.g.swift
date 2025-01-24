@@ -230,6 +230,7 @@ class BluetoothHidManagerPigeonCodec: FlutterStandardMessageCodec, @unchecked Se
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol BluetoothHidManagerPlatformChannel {
   func setupSdp(config: SdpConfig) throws
+  func closeSdp() throws
   func connect(deviceId: String, completion: @escaping (Result<Void, Error>) -> Void)
   func disconnect(deviceId: String, completion: @escaping (Result<Void, Error>) -> Void)
   func sendReport(deviceId: String, data: FlutterStandardTypedData) throws
@@ -255,6 +256,19 @@ class BluetoothHidManagerPlatformChannelSetup {
       }
     } else {
       setupSdpChannel.setMessageHandler(nil)
+    }
+    let closeSdpChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerPlatformChannel.closeSdp\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      closeSdpChannel.setMessageHandler { _, reply in
+        do {
+          try api.closeSdp()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      closeSdpChannel.setMessageHandler(nil)
     }
     let connectChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerPlatformChannel.connect\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

@@ -157,6 +157,15 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  Future<void> closeSdp() async {
+    try {
+      await FlutterAccessoryManager.closeSdp();
+    } catch (e) {
+      print(e);
+      showSnackbar(e);
+    }
+  }
+
   final List<int> androidDescriptor = [
     0x05, 0x0C, // Usage Page (Consumer)
     0x09, 0x01, // Usage (Consumer Control)
@@ -210,6 +219,10 @@ class _MyAppState extends State<MyApp> {
               PlatformButton(
                 onPressed: setupSdp,
                 text: "SetupSdp",
+              ),
+              PlatformButton(
+                onPressed: closeSdp,
+                text: "CloseSdp",
               ),
               PlatformButton(
                 onPressed: () async {

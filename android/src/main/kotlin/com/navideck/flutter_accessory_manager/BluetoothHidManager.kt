@@ -70,6 +70,15 @@ class BluetoothHidManager(
         initialized = true
     }
 
+    override fun closeSdp() {
+        initialized = false
+        btHidProxy?.let {
+            it.unregisterApp()
+            bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, it)
+        }
+        btHidProxy = null
+    }
+
 
     override fun connect(deviceId: String, callback: (Result<Unit>) -> Unit) {
         try {

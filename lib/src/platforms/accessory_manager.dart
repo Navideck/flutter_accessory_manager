@@ -54,6 +54,9 @@ class AccessoryManager extends FlutterAccessoryManagerInterface {
   @override
   Future<void> setupSdp(SdpConfig config) =>
       _hidManagerChannel.setupSdp(config);
+
+  @override
+  Future<void> closeSdp() => _hidManagerChannel.closeSdp();
 }
 
 // Handle callbacks from Native to Flutter

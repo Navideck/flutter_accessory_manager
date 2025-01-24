@@ -10,7 +10,7 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     var accessoryManagerCallbackChannel: FlutterAccessoryCallbackChannel
     var hidCallbackChannel: BluetoothHidManagerCallbackChannel
 
-    var service: IOBluetoothSDPServiceRecord?
+    var sdpRecord: SdpRecord?
     var delegateMap: [String: BTDevice] = [:]
     lazy var inquiry: IOBluetoothDeviceInquiry = .init(delegate: self)
     private var isInquiryStarted = false
@@ -41,6 +41,19 @@ extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
             try setupBluetoothSdpConfig(config: macConfig)
         } else {
             throw PigeonError(code: "ConfigError", message: "MacConfig not provided", details: nil)
+        }
+    }
+    
+    func closeSdp() throws {
+        if let record = sdpRecord {
+            record.service?.remove()
+            record.controlNotification?.unregister()
+            record.intruptNotification?.unregister()
+            record.service = nil
+            record.controlNotification = nil
+            record.intruptNotification = nil
+            sdpRecord = nil
+            hidCallbackChannel.onSdpServiceRegistrationUpdate(registered: false, completion: { _ in })
         }
     }
 
@@ -244,7 +257,7 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
 
 extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
     func setupBluetoothSdpConfig(config: MacSdpConfig) throws {
-        if service != nil {
+        if sdpRecord != nil {
             throw PigeonError(code: "AlreadyInitialized", message: "SDP service already initialized", details: nil)
         }
 
@@ -266,29 +279,32 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         }
 
         // Bluetooth SDP Service
-        service = IOBluetoothSDPServiceRecord.publishedServiceRecord(with: sdpDict! as [NSObject: AnyObject])
+       let service = IOBluetoothSDPServiceRecord.publishedServiceRecord(with: sdpDict! as [NSObject: AnyObject])
 
         // Open Channels for Incoming Connections
-        guard IOBluetoothL2CAPChannel
+        guard let controlChannel = IOBluetoothL2CAPChannel
             .register(forChannelOpenNotifications: self,
                       selector: #selector(newL2CAPChannelOpened),
                       withPSM: BTChannels.Control,
-                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming) != nil
+                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming)
         else {
-            service = nil
             throw PigeonError(code: "Failed", message: "Failed to register ControlChannel", details: nil)
         }
 
-        guard IOBluetoothL2CAPChannel
+        guard let interruptChannel =  IOBluetoothL2CAPChannel
             .register(forChannelOpenNotifications: self,
                       selector: #selector(newL2CAPChannelOpened),
                       withPSM: BTChannels.Interrupt,
-                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming) != nil
+                      direction: kIOBluetoothUserNotificationChannelDirectionIncoming)
         else {
-            service = nil
             throw PigeonError(code: "Failed", message: "Failed to register InterruptChannel", details: nil)
         }
-
+        
+        sdpRecord = SdpRecord()
+        sdpRecord?.service = service
+        sdpRecord?.controlNotification = controlChannel
+        sdpRecord?.intruptNotification = interruptChannel
+        
         // Send Sdp registered
         hidCallbackChannel.onSdpServiceRegistrationUpdate(registered: true, completion: { _ in })
         // TODO: Check if we have Callback when Sdp Unregister
@@ -391,6 +407,12 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
             }
         }
     }
+}
+
+class SdpRecord {
+   var service: IOBluetoothSDPServiceRecord?
+   var controlNotification: IOBluetoothUserNotification?
+   var intruptNotification: IOBluetoothUserNotification?
 }
 
 extension IOBluetoothDevice {

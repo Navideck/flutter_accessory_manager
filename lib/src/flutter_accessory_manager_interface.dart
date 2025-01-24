@@ -35,6 +35,10 @@ abstract class FlutterAccessoryManagerInterface {
     throw UnimplementedError();
   }
 
+  Future<void> closeSdp() {
+    throw UnimplementedError();
+  }
+
   Future<void> sendReport(String deviceId, Uint8List data) {
     throw UnimplementedError();
   }

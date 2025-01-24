@@ -32,6 +32,8 @@ class FlutterAccessoryManager {
   }) =>
       _platform.setupSdp(config);
 
+  static Future<void> closeSdp() => _platform.closeSdp();
+
   static Future<void> startScan() => _platform.startScan();
 
   static Future<void> stopScan() => _platform.stopScan();

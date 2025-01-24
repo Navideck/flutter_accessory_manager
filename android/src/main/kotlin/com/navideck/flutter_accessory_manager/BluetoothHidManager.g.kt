@@ -207,6 +207,7 @@ private open class BluetoothHidManagerPigeonCodec : StandardMessageCodec() {
  */
 interface BluetoothHidManagerPlatformChannel {
   fun setupSdp(config: SdpConfig)
+  fun closeSdp()
   fun connect(deviceId: String, callback: (Result<Unit>) -> Unit)
   fun disconnect(deviceId: String, callback: (Result<Unit>) -> Unit)
   fun sendReport(deviceId: String, data: ByteArray)
@@ -228,6 +229,22 @@ interface BluetoothHidManagerPlatformChannel {
             val configArg = args[0] as SdpConfig
             val wrapped: List<Any?> = try {
               api.setupSdp(configArg)
+              listOf(null)
+            } catch (exception: Throwable) {
+              wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.flutter_accessory_manager.BluetoothHidManagerPlatformChannel.closeSdp$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.closeSdp()
               listOf(null)
             } catch (exception: Throwable) {
               wrapError(exception)
