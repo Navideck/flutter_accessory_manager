@@ -10,7 +10,10 @@ public class FlutterAccessoryManagerPlugin: NSObject, FlutterPlugin {
     var accessoryManagerCallbackChannel: FlutterAccessoryCallbackChannel
     var hidCallbackChannel: BluetoothHidManagerCallbackChannel
 
-    var sdpRecord: SdpRecord?
+    var sdpService: IOBluetoothSDPServiceRecord?
+    var controlNotification: IOBluetoothUserNotification?
+    var interruptNotification: IOBluetoothUserNotification?
+
     var delegateMap: [String: BTDevice] = [:]
     lazy var inquiry: IOBluetoothDeviceInquiry = .init(delegate: self)
     private var isInquiryStarted = false
@@ -43,18 +46,15 @@ extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
             throw PigeonError(code: "ConfigError", message: "MacConfig not provided", details: nil)
         }
     }
-    
+
     func closeSdp() throws {
-        if let record = sdpRecord {
-            record.service?.remove()
-            record.controlNotification?.unregister()
-            record.intruptNotification?.unregister()
-            record.service = nil
-            record.controlNotification = nil
-            record.intruptNotification = nil
-            sdpRecord = nil
-            hidCallbackChannel.onSdpServiceRegistrationUpdate(registered: false, completion: { _ in })
-        }
+        sdpService?.remove()
+        controlNotification?.unregister()
+        interruptNotification?.unregister()
+        sdpService = nil
+        controlNotification = nil
+        interruptNotification = nil
+        hidCallbackChannel.onSdpServiceRegistrationUpdate(registered: false, completion: { _ in })
     }
 
     func connect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
@@ -257,7 +257,7 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothDeviceInquiryDelegate {
 
 extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
     func setupBluetoothSdpConfig(config: MacSdpConfig) throws {
-        if sdpRecord != nil {
+        if sdpService != nil {
             throw PigeonError(code: "AlreadyInitialized", message: "SDP service already initialized", details: nil)
         }
 
@@ -279,7 +279,7 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         }
 
         // Bluetooth SDP Service
-       let service = IOBluetoothSDPServiceRecord.publishedServiceRecord(with: sdpDict! as [NSObject: AnyObject])
+        sdpService = IOBluetoothSDPServiceRecord.publishedServiceRecord(with: sdpDict! as [NSObject: AnyObject])
 
         // Open Channels for Incoming Connections
         guard let controlChannel = IOBluetoothL2CAPChannel
@@ -288,23 +288,23 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
                       withPSM: BTChannels.Control,
                       direction: kIOBluetoothUserNotificationChannelDirectionIncoming)
         else {
+            sdpService = nil
             throw PigeonError(code: "Failed", message: "Failed to register ControlChannel", details: nil)
         }
 
-        guard let interruptChannel =  IOBluetoothL2CAPChannel
+        guard let interruptChannel = IOBluetoothL2CAPChannel
             .register(forChannelOpenNotifications: self,
                       selector: #selector(newL2CAPChannelOpened),
                       withPSM: BTChannels.Interrupt,
                       direction: kIOBluetoothUserNotificationChannelDirectionIncoming)
         else {
+            sdpService = nil
             throw PigeonError(code: "Failed", message: "Failed to register InterruptChannel", details: nil)
         }
-        
-        sdpRecord = SdpRecord()
-        sdpRecord?.service = service
-        sdpRecord?.controlNotification = controlChannel
-        sdpRecord?.intruptNotification = interruptChannel
-        
+
+        controlNotification = controlChannel
+        interruptNotification = interruptChannel
+
         // Send Sdp registered
         hidCallbackChannel.onSdpServiceRegistrationUpdate(registered: true, completion: { _ in })
         // TODO: Check if we have Callback when Sdp Unregister
@@ -407,12 +407,6 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
             }
         }
     }
-}
-
-class SdpRecord {
-   var service: IOBluetoothSDPServiceRecord?
-   var controlNotification: IOBluetoothUserNotification?
-   var intruptNotification: IOBluetoothUserNotification?
 }
 
 extension IOBluetoothDevice {
