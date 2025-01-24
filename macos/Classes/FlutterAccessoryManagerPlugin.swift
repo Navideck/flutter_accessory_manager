@@ -58,41 +58,60 @@ extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
     }
 
     func connect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
-        guard let device = IOBluetoothDevice(addressString: deviceId) else {
-            completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
-            return
-        }
-
-        // Initiate Connection, calling in DispatchQueue fails setup
-        if !device.isConnected() {
-            let ioReturn: IOReturn = device.openConnection(
-                nil,
-                withPageTimeout: UInt16(round(2.0 * 1600)),
-                authenticationRequired: true
-            )
-
-            if ioReturn != kIOReturnSuccess {
-                let errorString = String(cString: mach_error_string(Int32(ioReturn)))
-                completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
+        Task.detached {
+            guard let device = IOBluetoothDevice(addressString: deviceId) else {
+                await MainActor.run {
+                    completion(.failure(PigeonError(code: "Failed", message: "Device not found", details: nil)))
+                }
                 return
             }
+
+            if !device.isConnected() {
+                let ioReturn = await withCheckedContinuation { continuation in
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        guard let device = IOBluetoothDevice(addressString: deviceId) else {
+                            continuation.resume(returning: kIOReturnSuccess)
+                            return
+                        }
+                        let result = device.openConnection(
+                            nil,
+                            withPageTimeout: UInt16(round(2.0 * 1600)),
+                            authenticationRequired: true
+                        )
+                        continuation.resume(returning: result)
+                    }
+                }
+
+                if ioReturn != kIOReturnSuccess {
+                    await MainActor.run {
+                        let errorString = String(cString: mach_error_string(Int32(ioReturn)))
+                        completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
+                    }
+                    return
+                }
+            }
+
+            await MainActor.run {
+                self.setupL2CAPChannels(device: device, deviceId: deviceId, completion: completion)
+            }
         }
-
-        // Setup L2CAP channels
+    }
+    
+    
+    @MainActor
+    private func setupL2CAPChannels(device: IOBluetoothDevice, deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
         let btDevice = delegateMap[deviceId] ?? BTDevice()
-
+        
         if btDevice.interruptChannel != nil && btDevice.controlChannel != nil {
             print("Channel already opened")
             onConnectionUpdate(deviceId: deviceId, connected: true)
             completion(.success(()))
             return
         }
-
-        device.performSDPQuery(self)
-
+        
         btDevice.device = device
-
-        // TODO: maybe use openL2CAPChannelAync
+        device.performSDPQuery(self)
+        
         var result = device.openL2CAPChannelSync(&btDevice.controlChannel, withPSM: BTChannels.Control, delegate: self)
         if result != kIOReturnSuccess {
             let errorString = String(cString: mach_error_string(Int32(result)))
@@ -107,9 +126,10 @@ extension FlutterAccessoryManagerPlugin: BluetoothHidManagerPlatformChannel {
             return
         }
 
-        delegateMap[device.addressString] = btDevice
+        self.delegateMap[device.addressString] = btDevice
         completion(.success(()))
     }
+
 
     func disconnect(deviceId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
         guard let device = IOBluetoothDevice(addressString: deviceId) else {
