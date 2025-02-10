@@ -480,8 +480,11 @@ namespace flutter_accessory_manager
 
     auto deviceAddress = ParseBluetoothClientId(address);
     std::string name = winrt::to_string(deviceInfo.Name());
+    bool *is_connected_with_hid = nullptr;
+    DeviceClass *device_class = nullptr;
+    DeviceType *device_type = nullptr;
 
-    return BluetoothDevice(deviceAddress, &name, isPaired, rssi);
+    return BluetoothDevice(deviceAddress, &name, isPaired, is_connected_with_hid, rssi, device_class, device_type);
   }
 
 } // namespace flutter_accessory_manager
