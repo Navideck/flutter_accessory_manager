@@ -78,9 +78,7 @@ namespace flutter_accessory_manager
         void ShowBluetoothAccessoryPicker(
             const flutter::EncodableList &with_names,
             std::function<void(std::optional<FlutterError> reply)> result);
-        void Disconnect(
-            const std::string &device_id,
-            std::function<void(std::optional<FlutterError> reply)> result);
+        // void Disconnect(const std::string &device_id,std::function<void(std::optional<FlutterError> reply)> result);
         std::optional<FlutterError> StartScan();
         std::optional<FlutterError> StopScan();
         ErrorOr<bool> IsScanning();
