@@ -5,3 +5,4 @@ export 'package:flutter_accessory_manager/src/generated/external_accessory.g.dar
 export 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart'
     show BluetoothDevice;
 export 'package:flutter_accessory_manager/src/flutter_accessory_manager.dart';
+export 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
