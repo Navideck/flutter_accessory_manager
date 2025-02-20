@@ -302,6 +302,11 @@ namespace flutter_accessory_manager
     try
     {
       auto device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(address));
+      if (device == nullptr)
+      {
+        result(FlutterError("Device not found"));
+        co_return;
+      }
       auto deviceInformation = device.DeviceInformation();
       if (deviceInformation.Pairing().IsPaired())
       {
@@ -339,6 +344,11 @@ namespace flutter_accessory_manager
     try
     {
       auto device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(address));
+      if (device == nullptr)
+      {
+        result(FlutterError("Device not found"));
+        co_return;
+      }
       auto deviceInformation = device.DeviceInformation();
       if (deviceInformation.Pairing().IsPaired())
         result(true);
