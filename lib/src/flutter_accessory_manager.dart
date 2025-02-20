@@ -1,12 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_accessory_manager/flutter_accessory_manager.dart';
-import 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
 import 'package:flutter_accessory_manager/src/platforms/accessory_manager.dart';
 import 'package:flutter_accessory_manager/src/platforms/accessory_manager_bluez.dart';
 import 'package:flutter_accessory_manager/src/platforms/external_accessory.dart';
 
 class FlutterAccessoryManager {
-  static final FlutterAccessoryManagerInterface _platform = _defaultPlatform();
+  /// Default platform accessor.
+  static FlutterAccessoryManagerInterface? _platformInstance;
+  static FlutterAccessoryManagerInterface get _platform =>
+      _platformInstance ??= _defaultPlatform();
+
+  /// Set custom platform specific implementation (e.g. for testing).
+  static void setInstance(FlutterAccessoryManagerInterface? instance) {
+    _platformInstance = instance;
+  }
 
   static Future<void> showBluetoothAccessoryPicker({
     List<String> withNames = const [],
