@@ -173,6 +173,18 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
         }
     }
 
+    override fun unpair(address: String, callback: (Result<Unit>) -> Unit) {
+        try {
+            val remoteDevice = getBluetoothDeviceFromId(address)
+            if (remoteDevice.bondState == BOND_BONDED) {
+                javaClass.getMethod("removeBond").invoke(this)
+            }
+            callback(Result.success(Unit))
+        } catch (e: Exception) {
+            callback(Result.failure(FlutterError("Failed", e.toString())))
+        }
+    }
+
     private fun onBondStateUpdate(deviceId: String, bonded: Boolean, error: String? = null) {
         val future = pairResultFutures.remove(deviceId)
         future?.let { it(Result.success(bonded)) }
@@ -212,7 +224,7 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
                     if (device.type == BluetoothDevice.DEVICE_TYPE_LE) return
                     val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE)
                     // Cache the result
-                   // bluetoothDevicesCache[device.address] = device
+                    // bluetoothDevicesCache[device.address] = device
                     accessoryManagerThreadHandler?.post {
                         callbackChannel?.onDeviceDiscover(deviceArg = device.toFlutter(rssi.toLong())) {}
                     }

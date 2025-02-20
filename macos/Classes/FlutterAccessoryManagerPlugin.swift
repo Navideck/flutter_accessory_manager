@@ -222,13 +222,24 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
             completion(.failure(PigeonError(code: "Failed", message: errorString, details: nil)))
         }
     }
-
-    func unpair(address: String) -> Bool? {
-        guard let device = IOBluetoothDevice(addressString: address) else { return nil }
+    
+    func unpair(address: String, completion: @escaping (Result<Void, any Error>) -> Void) {
+        guard let device = IOBluetoothDevice(addressString: address) else {
+            completion(.failure(PigeonError(code: "DeviceNotFound", message: "Device not found", details: nil)))
+            return
+        }
+        
         // There is no public API for unPairing, so we need this ugly hack with a custom selector
         let selector = Selector(("remove"))
-        if device.responds(to: selector) { device.perform(selector) }
-        return !device.isPaired()
+        if device.responds(to: selector) {
+            device.perform(selector)
+        }
+        
+        if(device.isPaired()){
+            completion(.failure(PigeonError(code: "Failed", message: "Failed to unpair", details: nil)))
+        }else{
+            completion(.success(Void()))
+        }
     }
 }
 
