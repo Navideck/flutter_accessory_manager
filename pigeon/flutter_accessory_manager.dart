@@ -36,6 +36,9 @@ abstract class FlutterAccessoryPlatformChannel {
 
   @async
   bool pair(String address);
+
+  @async
+  void unpair(String address);
 }
 
 /// Native -> Flutter

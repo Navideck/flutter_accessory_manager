@@ -59,6 +59,10 @@ abstract class FlutterAccessoryManagerInterface {
     throw UnimplementedError();
   }
 
+  Future<void> unpair(String address) {
+    throw UnimplementedError();
+  }
+
   Future<List<BluetoothDevice>> getPairedDevices() {
     throw UnimplementedError();
   }

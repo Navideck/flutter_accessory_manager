@@ -41,6 +41,10 @@ class AccessoryManager extends FlutterAccessoryManagerInterface {
   Future<bool> pair(String address) => _accessoryManagerChannel.pair(address);
 
   @override
+  Future<void> unpair(String address) =>
+      _accessoryManagerChannel.unpair(address);
+
+  @override
   Future<List<BluetoothDevice>> getPairedDevices() =>
       _accessoryManagerChannel.getPairedDevices();
 

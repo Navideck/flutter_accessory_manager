@@ -178,6 +178,9 @@ class FlutterAccessoryPlatformChannel {
   virtual void Pair(
     const std::string& address,
     std::function<void(ErrorOr<bool> reply)> result) = 0;
+  virtual void Unpair(
+    const std::string& address,
+    std::function<void(std::optional<FlutterError> reply)> result) = 0;
 
   // The codec used by FlutterAccessoryPlatformChannel.
   static const flutter::StandardMessageCodec& GetCodec();

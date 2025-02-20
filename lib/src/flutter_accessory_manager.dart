@@ -49,6 +49,8 @@ class FlutterAccessoryManager {
 
   static Future<bool> pair(String address) => _platform.pair(address);
 
+  static Future<void> unpair(String address) => _platform.unpair(address);
+
   static Future<List<BluetoothDevice>> getPairedDevices() =>
       _platform.getPairedDevices();
 

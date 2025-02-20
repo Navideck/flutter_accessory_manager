@@ -19,6 +19,16 @@ class BluetoothDeviceItem extends StatelessWidget {
     }
   }
 
+  Future<void> unPairDevice() async {
+    try {
+      print("Unpairing ${device.address}");
+      await FlutterAccessoryManager.unpair(device.address);
+      print("Unpaired");
+    } catch (e) {
+      print(e);
+    }
+  }
+
   Future<void> disconnect() async {
     print("Disconnecting");
     await FlutterAccessoryManager.disconnect(device.address);
@@ -112,6 +122,10 @@ class BluetoothDeviceItem extends StatelessWidget {
             PlatformButton(
               onPressed: pairDevice,
               text: "Pair",
+            ),
+            PlatformButton(
+              onPressed: unPairDevice,
+              text: "UnPair",
             ),
             PlatformButton(
               onPressed: connect,

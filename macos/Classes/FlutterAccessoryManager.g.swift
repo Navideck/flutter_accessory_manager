@@ -198,6 +198,7 @@ protocol FlutterAccessoryPlatformChannel {
   func isScanning() throws -> Bool
   func getPairedDevices() throws -> [BluetoothDevice]
   func pair(address: String, completion: @escaping (Result<Bool, Error>) -> Void)
+  func unpair(address: String, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -291,6 +292,23 @@ class FlutterAccessoryPlatformChannelSetup {
       }
     } else {
       pairChannel.setMessageHandler(nil)
+    }
+    let unpairChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_accessory_manager.FlutterAccessoryPlatformChannel.unpair\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      unpairChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let addressArg = args[0] as! String
+        api.unpair(address: addressArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      unpairChannel.setMessageHandler(nil)
     }
   }
 }
