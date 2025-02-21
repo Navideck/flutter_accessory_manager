@@ -76,6 +76,15 @@ class AccessoryManagerBluez extends FlutterAccessoryManagerInterface {
   }
 
   @override
+  Future<void> unpair(String address) async {
+    await _ensureInitialized();
+    BlueZDevice device = _findDeviceById(address);
+    if (device.paired) {
+      await _activeAdapter?.removeDevice(device);
+    }
+  }
+
+  @override
   Future<List<BluetoothDevice>> getPairedDevices() async {
     await _ensureInitialized();
     return _client.devices

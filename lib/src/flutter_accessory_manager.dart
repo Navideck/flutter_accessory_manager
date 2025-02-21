@@ -1,17 +1,19 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_accessory_manager/src/flutter_accessory_manager_interface.dart';
-import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
+import 'package:flutter_accessory_manager/flutter_accessory_manager.dart';
 import 'package:flutter_accessory_manager/src/platforms/accessory_manager.dart';
 import 'package:flutter_accessory_manager/src/platforms/accessory_manager_bluez.dart';
 import 'package:flutter_accessory_manager/src/platforms/external_accessory.dart';
 
 class FlutterAccessoryManager {
-  /// Get platform specific implementation.
-  static FlutterAccessoryManagerInterface _platform = _defaultPlatform();
+  /// Default platform accessor.
+  static FlutterAccessoryManagerInterface? _platformInstance;
+  static FlutterAccessoryManagerInterface get _platform =>
+      _platformInstance ??= _defaultPlatform();
 
   /// Set custom platform specific implementation (e.g. for testing).
-  static void setInstance(FlutterAccessoryManagerInterface instance) =>
-      _platform = instance;
+  static void setInstance(FlutterAccessoryManagerInterface? instance) {
+    _platformInstance = instance;
+  }
 
   static Future<void> showBluetoothAccessoryPicker({
     List<String> withNames = const [],
@@ -27,6 +29,18 @@ class FlutterAccessoryManager {
   static Future<void> disconnect(String deviceId) =>
       _platform.disconnect(deviceId);
 
+  static Future<void> connect(String deviceId) => _platform.connect(deviceId);
+
+  static Future<void> sendReport(String deviceId, Uint8List data) =>
+      _platform.sendReport(deviceId, data);
+
+  static Future<void> setupSdp({
+    required SdpConfig config,
+  }) =>
+      _platform.setupSdp(config);
+
+  static Future<void> closeSdp() => _platform.closeSdp();
+
   static Future<void> startScan() => _platform.startScan();
 
   static Future<void> stopScan() => _platform.stopScan();
@@ -34,6 +48,8 @@ class FlutterAccessoryManager {
   static Future<bool> isScanning() => _platform.isScanning();
 
   static Future<bool> pair(String address) => _platform.pair(address);
+
+  static Future<void> unpair(String address) => _platform.unpair(address);
 
   static Future<List<BluetoothDevice>> getPairedDevices() =>
       _platform.getPairedDevices();
@@ -52,6 +68,19 @@ class FlutterAccessoryManager {
 
   static set onBluetoothDeviceRemoved(BluetoothDeviceCallback? callback) {
     FlutterAccessoryManagerInterface.onBluetoothDeviceRemoved = callback;
+  }
+
+  static set onConnectionStateChanged(ConnectionChangeCallback? callback) {
+    FlutterAccessoryManagerInterface.onConnectionStateChanged = callback;
+  }
+
+  static set onGetReport(GetReportCallback? callback) {
+    FlutterAccessoryManagerInterface.onGetReport = callback;
+  }
+
+  static set onSdpServiceRegistrationUpdate(
+      SdpServiceRegistrationUpdateCallback? callback) {
+    FlutterAccessoryManagerInterface.onSdpServiceRegistrationUpdate = callback;
   }
 
   static FlutterAccessoryManagerInterface _defaultPlatform() {

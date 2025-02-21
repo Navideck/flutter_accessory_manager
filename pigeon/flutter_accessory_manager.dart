@@ -24,12 +24,7 @@ import 'package:pigeon/pigeon.dart';
 @HostApi()
 abstract class FlutterAccessoryPlatformChannel {
   @async
-  void showBluetoothAccessoryPicker(
-    List<String> withNames,
-  );
-
-  @async
-  void disconnect(String deviceId);
+  void showBluetoothAccessoryPicker(List<String> withNames);
 
   void startScan();
 
@@ -41,6 +36,9 @@ abstract class FlutterAccessoryPlatformChannel {
 
   @async
   bool pair(String address);
+
+  @async
+  void unpair(String address);
 }
 
 /// Native -> Flutter
@@ -55,7 +53,10 @@ class BluetoothDevice {
   String address;
   String? name;
   bool paired;
+  bool? isConnectedWithHid;
   int rssi;
+  DeviceClass? deviceClass;
+  DeviceType? deviceType;
 
   BluetoothDevice({
     required this.address,
@@ -63,4 +64,25 @@ class BluetoothDevice {
     required this.paired,
     required this.rssi,
   });
+}
+
+enum DeviceClass {
+  audioVideo,
+  computer,
+  health,
+  imaging,
+  misc,
+  networking,
+  peripheral,
+  phone,
+  toy,
+  uncategorized,
+  wearable,
+}
+
+enum DeviceType {
+  classic,
+  le,
+  dual,
+  unknown,
 }
