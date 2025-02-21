@@ -48,36 +48,40 @@ class BluetoothDeviceItem extends StatelessWidget {
   Future<void> sendReport() async {
     try {
       if (Platform.isAndroid) {
-        await sendVolumeDownAndroidReport();
+        await sendAndroidKeyboardKey();
       } else if (Platform.isMacOS) {
-        await sendVolumeUpMacReport();
+        await sendMacKeyboardKey();
       }
     } catch (e) {
       print(e);
     }
   }
 
-  Future<void> sendVolumeDownAndroidReport() async {
+  Future<void> sendAndroidKeyboardKey() async {
     await FlutterAccessoryManager.sendReport(
       device.address,
-      Uint8List.fromList([0x01, 0xEA, 0x00]), // VolumeDown button down
+      Uint8List.fromList(
+        [0x01, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00],
+      ), // Key A Down
     );
     await Future.delayed(const Duration(milliseconds: 200));
     await FlutterAccessoryManager.sendReport(
       device.address,
-      Uint8List.fromList([0x01, 0x00, 0x00]), // VolumeDown button up
+      Uint8List.fromList(
+        [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+      ), // Key A Up
     );
   }
 
-  Future<void> sendVolumeUpMacReport() async {
+  Future<void> sendMacKeyboardKey() async {
     await FlutterAccessoryManager.sendReport(
       device.address,
-      Uint8List.fromList(macHidReport(128, 0)), // VolumeUp button down
+      Uint8List.fromList(macHidReport(0x04, 0)), //  Key A Down
     );
     await Future.delayed(const Duration(milliseconds: 200));
     await FlutterAccessoryManager.sendReport(
       device.address,
-      Uint8List.fromList(macHidReport(0, 0)), // VolumeUp button up
+      Uint8List.fromList(macHidReport(0, 0)), // Key A Up
     );
   }
 
