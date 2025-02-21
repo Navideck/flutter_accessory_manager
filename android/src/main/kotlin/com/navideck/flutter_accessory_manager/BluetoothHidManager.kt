@@ -137,7 +137,7 @@ class BluetoothHidManager(
             }
             val bluetoothDevice = getBluetoothDeviceFromId(deviceId)
 
-            // check if already disconnected
+            // Check if already disconnected
             val state = btHidProxy.getConnectionState(bluetoothDevice)
             if (state == BluetoothProfile.STATE_DISCONNECTING || state == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.d(TAG, "Already Disconnected")
