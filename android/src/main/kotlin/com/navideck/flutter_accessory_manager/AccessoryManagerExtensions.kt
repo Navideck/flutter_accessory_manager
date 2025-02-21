@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Handler
 
 // Public reusable variables
-//internal var bluetoothDevicesCache = mutableMapOf<String, BluetoothDevice>()
 internal var accessoryManagerThreadHandler: Handler? = null
 internal var btHidProxy: BluetoothHidDevice? = null
 internal var bluetoothAdapter: BluetoothAdapter? = null
@@ -32,18 +31,6 @@ internal fun BluetoothDevice.toFlutter(rssi: Long?): com.navideck.flutter_access
 internal fun getBluetoothDeviceFromId(deviceId: String): BluetoothDevice {
     return bluetoothAdapter?.getRemoteDevice(deviceId)
         ?: throw Exception("Device not found, please scan")
-    // Try to get from cache
-    // bluetoothDevicesCache[deviceId]?.let { return it }
-    // Try to get from HidProxy
-    //    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-    //        btHidProxy?.getDevicesMatchingConnectionStates(
-    //            intArrayOf(BluetoothProfile.STATE_CONNECTING, BluetoothProfile.STATE_CONNECTED)
-    //        )?.firstOrNull { it.address == deviceId }?.let {
-    //            return it
-    //        }
-    //    }
-    //    // Try to get from ConnectedDevices
-    //    bluetoothAdapter?.bondedDevices?.firstOrNull { it.address == deviceId }?.let { return it }
 }
 
 

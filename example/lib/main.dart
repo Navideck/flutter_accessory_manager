@@ -69,8 +69,8 @@ class _MyAppState extends State<MyApp> {
     };
 
     FlutterAccessoryManager.onSdpServiceRegistrationUpdate = (bool registered) {
-      print("Sdp Service Registered $registered");
-      showSnackbar("Sdp Service Registered $registered");
+      print("SDP Service Registered $registered");
+      showSnackbar("SDP Service Registered $registered");
     };
 
     super.initState();

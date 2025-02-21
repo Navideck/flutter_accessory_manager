@@ -224,7 +224,6 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
                     if (device.type == BluetoothDevice.DEVICE_TYPE_LE) return
                     val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE)
                     // Cache the result
-                    // bluetoothDevicesCache[device.address] = device
                     accessoryManagerThreadHandler?.post {
                         callbackChannel?.onDeviceDiscover(deviceArg = device.toFlutter(rssi.toLong())) {}
                     }
