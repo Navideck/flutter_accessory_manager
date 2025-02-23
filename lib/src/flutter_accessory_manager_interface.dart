@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:flutter_accessory_manager/src/generated/bluetooth_hid_manager.g.dart';
 import 'package:flutter_accessory_manager/src/generated/external_accessory.g.dart';
 import 'package:flutter_accessory_manager/src/generated/flutter_accessory_manager.g.dart';
 
@@ -6,6 +9,9 @@ abstract class FlutterAccessoryManagerInterface {
   static AccessoryCallback? accessoryDisconnected;
   static BluetoothDeviceCallback? onBluetoothDeviceDiscover;
   static BluetoothDeviceCallback? onBluetoothDeviceRemoved;
+  static ConnectionChangeCallback? onConnectionStateChanged;
+  static GetReportCallback? onGetReport;
+  static SdpServiceRegistrationUpdateCallback? onSdpServiceRegistrationUpdate;
 
   Future<void> showBluetoothAccessoryPicker({
     List<String>? withNames,
@@ -17,7 +23,23 @@ abstract class FlutterAccessoryManagerInterface {
     throw UnimplementedError();
   }
 
+  Future<void> connect(String deviceId) {
+    throw UnimplementedError();
+  }
+
   Future<void> disconnect(String deviceId) {
+    throw UnimplementedError();
+  }
+
+  Future<void> setupSdp(SdpConfig config) {
+    throw UnimplementedError();
+  }
+
+  Future<void> closeSdp() {
+    throw UnimplementedError();
+  }
+
+  Future<void> sendReport(String deviceId, Uint8List data) {
     throw UnimplementedError();
   }
 
@@ -37,6 +59,10 @@ abstract class FlutterAccessoryManagerInterface {
     throw UnimplementedError();
   }
 
+  Future<void> unpair(String address) {
+    throw UnimplementedError();
+  }
+
   Future<List<BluetoothDevice>> getPairedDevices() {
     throw UnimplementedError();
   }
@@ -45,3 +71,11 @@ abstract class FlutterAccessoryManagerInterface {
 typedef AccessoryCallback = void Function(EAAccessory accessory);
 
 typedef BluetoothDeviceCallback = void Function(BluetoothDevice device);
+
+typedef ConnectionChangeCallback = void Function(
+    String deviceId, bool connected);
+
+typedef GetReportCallback = ReportReply? Function(
+    String deviceId, ReportType type, int bufferSize);
+
+typedef SdpServiceRegistrationUpdateCallback = void Function(bool registered);

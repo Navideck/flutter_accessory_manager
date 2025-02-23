@@ -45,12 +45,10 @@ namespace flutter_accessory_manager
     ShowDevicePicker(result);
   }
 
-  void FlutterAccessoryManagerPlugin::Disconnect(
-      const std::string &device_id,
-      std::function<void(std::optional<FlutterError> reply)> result)
-  {
-    DisconnectAsync(device_id, result);
-  }
+  // void FlutterAccessoryManagerPlugin::Disconnect(const std::string &device_id,std::function<void(std::optional<FlutterError> reply)> result)
+  // {
+  //   DisconnectAsync(device_id, result);
+  // }
 
   std::optional<FlutterError> FlutterAccessoryManagerPlugin::StartScan()
   {
@@ -182,6 +180,11 @@ namespace flutter_accessory_manager
     }
   }
 
+  void FlutterAccessoryManagerPlugin::Unpair(const std::string &address, std::function<void(std::optional<FlutterError> reply)> result)
+  {
+    UnPairAsync(address, result);
+  }
+
   // Helper methods
   void FlutterAccessoryManagerPlugin::setupDeviceWatcher()
   {
@@ -299,11 +302,71 @@ namespace flutter_accessory_manager
     Pair(address, pairCallback);
   }
 
+  winrt::fire_and_forget FlutterAccessoryManagerPlugin::UnPairAsync(const std::string &address, std::function<void(std::optional<FlutterError> reply)> result)
+  {
+    try
+    {
+      auto device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(address));
+      if (device == nullptr)
+      {
+        result(FlutterError("Device not found"));
+        co_return;
+      }
+      auto deviceInformation = device.DeviceInformation();
+      bool isPaired = deviceInformation.Pairing().IsPaired();
+      if (!isPaired)
+      {
+        result(FlutterError("Device is not paired"));
+        co_return;
+      }
+
+      auto deviceUnpairingResult = async_get(deviceInformation.Pairing().UnpairAsync());
+      auto unpairingStatus = deviceUnpairingResult.Status();
+      if (unpairingStatus == Enumeration::DeviceUnpairingResultStatus::Failed)
+      {
+        result(FlutterError("Failed to unpair device"));
+        co_return;
+      }
+      if (unpairingStatus == Enumeration::DeviceUnpairingResultStatus::AccessDenied)
+      {
+        result(FlutterError("Access denied"));
+        co_return;
+      }
+      if (unpairingStatus == Enumeration::DeviceUnpairingResultStatus::AlreadyUnpaired)
+      {
+        result(FlutterError("Device is already unpaired"));
+        co_return;
+      }
+      if (unpairingStatus == Enumeration::DeviceUnpairingResultStatus::OperationAlreadyInProgress)
+      {
+        result(FlutterError("OperationAlreadyInProgress"));
+        co_return;
+      }
+      result(std::nullopt);
+    }
+    catch (const winrt::hresult_error &err)
+    {
+      int errorCode = err.code();
+      std::cout << "PairLog: Failed:  " << winrt::to_string(err.message()) << " ErrorCode: " << std::to_string(errorCode) << std::endl;
+      result(FlutterError(std::to_string(errorCode), winrt::to_string(err.message())));
+    }
+    catch (...)
+    {
+      std::cout << "PairLog: Unknown error" << std::endl;
+      result(FlutterError("Failed to unpair"));
+    }
+  }
+
   winrt::fire_and_forget FlutterAccessoryManagerPlugin::PairAsync(const std::string &address, std::function<void(ErrorOr<bool> reply)> result)
   {
     try
     {
       auto device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(address));
+      if (device == nullptr)
+      {
+        result(FlutterError("Device not found"));
+        co_return;
+      }
       auto deviceInformation = device.DeviceInformation();
       if (deviceInformation.Pairing().IsPaired())
       {
@@ -341,6 +404,11 @@ namespace flutter_accessory_manager
     try
     {
       auto device = co_await Bluetooth::BluetoothDevice::FromBluetoothAddressAsync(str_to_mac_address(address));
+      if (device == nullptr)
+      {
+        result(FlutterError("Device not found"));
+        co_return;
+      }
       auto deviceInformation = device.DeviceInformation();
       if (deviceInformation.Pairing().IsPaired())
         result(true);
@@ -482,8 +550,11 @@ namespace flutter_accessory_manager
 
     auto deviceAddress = ParseBluetoothClientId(address);
     std::string name = winrt::to_string(deviceInfo.Name());
+    bool *is_connected_with_hid = nullptr;
+    DeviceClass *device_class = nullptr;
+    DeviceType *device_type = nullptr;
 
-    return BluetoothDevice(deviceAddress, &name, isPaired, rssi);
+    return BluetoothDevice(deviceAddress, &name, isPaired, is_connected_with_hid, rssi, device_class, device_type);
   }
 
 } // namespace flutter_accessory_manager
