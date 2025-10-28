@@ -22,7 +22,7 @@ class BluetoothHidManager(
     private val context: Context,
     private val callbackChannel: BluetoothHidManagerCallbackChannel,
 ) : BluetoothHidManagerPlatformChannel, BluetoothHidDevice.Callback() {
-    private var initialized = false;
+    private var initialized = false
     private var connectionFuture = mutableMapOf<String, ConnectionFuture>()
     private var disconnectionFuture = mutableMapOf<String, ConnectionFuture>()
 
@@ -179,7 +179,7 @@ class BluetoothHidManager(
             ?: throw FlutterError("NotFound", "Device not connected")
         val result = btHidProxy?.sendReport(device, 0, data) ?: false
         if (!result) {
-            throw FlutterError("Failed", "Failed to disconnect")
+            throw FlutterError("Failed", "Failed to send report")
         }
     }
 

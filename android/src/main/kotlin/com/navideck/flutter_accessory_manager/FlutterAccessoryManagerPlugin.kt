@@ -177,7 +177,7 @@ class FlutterAccessoryManagerPlugin : FlutterAccessoryPlatformChannel, FlutterPl
         try {
             val remoteDevice = getBluetoothDeviceFromId(address)
             if (remoteDevice.bondState == BOND_BONDED) {
-                javaClass.getMethod("removeBond").invoke(this)
+                remoteDevice.javaClass.getMethod("removeBond").invoke(remoteDevice)
             }
             callback(Result.success(Unit))
         } catch (e: Exception) {

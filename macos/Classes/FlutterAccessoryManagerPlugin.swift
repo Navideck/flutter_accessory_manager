@@ -235,10 +235,10 @@ extension FlutterAccessoryManagerPlugin: FlutterAccessoryPlatformChannel {
             device.perform(selector)
         }
         
-        if(device.isPaired()){
+        if (device.isPaired()) {
             completion(.failure(PigeonError(code: "Failed", message: "Failed to unpair", details: nil)))
         }else{
-            completion(.success(Void()))
+            completion(.success(()))
         }
     }
 }
@@ -298,8 +298,13 @@ extension FlutterAccessoryManagerPlugin: IOBluetoothL2CAPChannelDelegate {
         var sdpDict: NSDictionary? = nil
 
         if let sdpPlist = config.sdpPlistFile {
-            let dictPath = Bundle.main.path(forResource: sdpPlist, ofType: "plist")
-            sdpDict = NSDictionary(contentsOfFile: dictPath!)!
+            guard let dictPath = Bundle.main.path(forResource: sdpPlist, ofType: "plist") else {
+                 throw PigeonError(code: "FileNotFound", message: "SDP plist file '\(sdpPlist).plist' not found in bundle", details: nil)
+             }
+             guard let dict = NSDictionary(contentsOfFile: dictPath) else {
+                 throw PigeonError(code: "InvalidPlist", message: "Failed to load NSDictionary from file at path: \(dictPath)", details: nil)
+             }
+             sdpDict = dict
         } else if let sdpPlistData = config.data {
             // TODO: Fix this
             sdpDict = NSDictionary(dictionary: sdpPlistData)
