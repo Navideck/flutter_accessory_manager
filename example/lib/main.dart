@@ -77,7 +77,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void onBluetoothDeviceDiscover(device) {
-    if (!showDevicesWithoutName && device.name == null || device.name == "") {
+    if (!showDevicesWithoutName && (device.name == null || device.name == "")) {
       return;
     }
     print("Device Discover ${device.name} ${device.address}");
