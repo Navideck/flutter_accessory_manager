@@ -530,6 +530,7 @@ class FlutterAccessoryManagerMock extends FlutterAccessoryManagerInterface {
 // Set custom platform specific implementation (e.g. for testing)
 FlutterAccessoryManager.setInstance(FlutterAccessoryManagerMock());
 ```
+<<<<<<< HEAD
 
 ## 🧩 Apps using Flutter Accessory Manager
 
@@ -540,3 +541,5 @@ Here are some of the apps leveraging the power of `flutter_accessory_manager` in
 > 💡 **Built something cool with Flutter Accessory Manager?**  
 > We'd love to showcase your app here!  
 > Open a pull request and add it to this section. Please include your app icon in svg!
+=======
+>>>>>>> 274eb2b (Update readme)
