@@ -530,3 +530,13 @@ class FlutterAccessoryManagerMock extends FlutterAccessoryManagerInterface {
 // Set custom platform specific implementation (e.g. for testing)
 FlutterAccessoryManager.setInstance(FlutterAccessoryManagerMock());
 ```
+
+## 🧩 Apps using Flutter Accessory Manager
+
+Here are some of the apps leveraging the power of `flutter_accessory_manager` in production:
+
+| <img src="assets/bt_cam_icon.svg" alt="BT Cam Icon" width="224" height="224"> | [**BT Cam**](https://btcam.app)<br>A Bluetooth remote app for DSLR and mirrorless cameras. Compatible with Canon, Nikon, Sony, Fujifilm, GoPro, Olympus, Panasonic, Pentax, and Blackmagic. Built using Flutter Accessory Manager to connect and control cameras across iOS, Android, macOS, Windows, Linux & Web. |
+|:--:|:--|
+> 💡 **Built something cool with Flutter Accessory Manager?**  
+> We'd love to showcase your app here!  
+> Open a pull request and add it to this section. Please include your app icon in svg!
