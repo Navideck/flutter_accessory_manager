@@ -20,22 +20,22 @@ A cross-platform (Android/iOS/macOS/Windows/Linux) plugin for managing Bluetooth
 
 |                      | Android | iOS | macOS | Windows | Linux |
 | :------------------- | :-----: | :-: | :---: | :-----: | :---: |
-| startScan/stopScan   |   ✔️    | ✔️* |  ✔️   |   ✔️    | ✔️  |
-| pair/unpair          |   ✔️    | ✔️* |  ✔️   |   ✔️    | ✔️  |
-| getPairedDevices     |   ✔️    | ✔️* |  ✔️   |   ✔️    | ✔️  |
-| connect              |   ✔️    | ✔️* |  ✔️   |   ✔️    | ✔️* |
+| showBluetoothAccessoryPicker |   ✔️    | ✔️  |  ✔️   |   ✔️    | ❌  |
+| startScan/stopScan   |   ✔️    | ❌  |  ✔️   |   ✔️    | ✔️  |
+| pair/unpair          |   ✔️    | ❌  |  ✔️   |   ✔️    | ✔️  |
+| getPairedDevices     |   ✔️    | ❌  |  ✔️   |   ✔️    | ✔️  |
+| connect              |   ✔️    | ❌  |  ✔️   |   ✔️    | ✔️* |
 | disconnect           |   ✔️    | ✔️* |  ✔️   |   ✔️    | ✔️* |
 | sendReport           |   ✔️    | ❌  |  ✔️   |   ✔️    | ❌  |
 | setupSdp/closeSdp    |   ✔️    | ❌  |  ✔️   |   ✔️    | ❌  |
-| showBluetoothAccessoryPicker |   ✔️    | ✔️  |  ✔️   |   ✔️    | ❌  |
-| onDeviceDiscovered   |   ✔️    | ✔️  |  ✔️   |   ✔️    | ✔️  |
-| onDeviceRemoved      |   ✔️    | ✔️  |  ✔️   |   ✔️    | ✔️  |
-| onConnectionStateChanged |   ✔️    | ✔️  |  ✔️   |   ✔️    | ✔️  |
+| onDeviceDiscovered   |   ✔️    | ❌  |  ✔️   |   ✔️    | ✔️  |
+| onDeviceRemoved      |   ✔️    | ❌  |  ✔️   |   ✔️    | ✔️  |
+| onConnectionStateChanged |   ✔️    | ❌  |  ✔️   |   ✔️    | ✔️  |
 | onGetReport          |   ✔️    | ❌  |  ✔️   |   ✔️    | ❌  |
 | onSdpServiceRegistrationUpdate |   ✔️    | ❌  |  ✔️   |   ✔️    | ❌  |
 
 **Platform Implementation Notes:**
-- *iOS: Uses External Accessory framework (picker-based discovery/pairing, EA sessions for connection)
+- *iOS: `disconnect()` calls `closeEASession()` internally
 - *Linux: Basic Bluetooth connection (not HID-specific)
 
 ## Getting Started
@@ -57,15 +57,13 @@ import 'package:flutter_accessory_manager/flutter_accessory_manager.dart';
 
 ### Start Scanning
 
-Start scanning for Bluetooth devices. Works on all platforms:
+Start scanning for Bluetooth devices:
 
 ```dart
 await FlutterAccessoryManager.startScan();
 ```
 
-> **Platform Behavior:**
-> - **Android/macOS/Windows/Linux:** Starts Bluetooth device discovery
-> - **iOS:** Automatically shows the External Accessory picker dialog
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS (throws `UnimplementedError`).
 
 ### Stop Scanning
 
@@ -83,11 +81,11 @@ Check if currently scanning:
 bool isScanning = await FlutterAccessoryManager.isScanning();
 ```
 
-> **iOS:** Returns `true` while the picker dialog is open
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS.
 
 ### Device Discovery
 
-Listen to discovered devices. This unified callback works on all platforms:
+Listen to discovered devices:
 
 ```dart
 FlutterAccessoryManager.onDeviceDiscovered = (BluetoothDevice device) {
@@ -96,23 +94,14 @@ FlutterAccessoryManager.onDeviceDiscovered = (BluetoothDevice device) {
   print('Paired: ${device.paired}');
   print('Device Type: ${device.deviceType}');
   print('Device Class: ${device.deviceClass}');
-  
-  // Check if iOS External Accessory
-  if (device.isExternalAccessory == true) {
-    print('iOS External Accessory');
-    print('Manufacturer: ${device.manufacturer}');
-    print('Protocols: ${device.protocolStrings}');
-  }
 };
 ```
 
-> **Platform Behavior:**
-> - **Android/macOS/Windows/Linux:** Triggered when devices are discovered during scan
-> - **iOS:** Triggered when user selects a device from the picker (automatically shown by `startScan()`)
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS.
 
 ### Device Removed
 
-Listen to device removal events. Works on all platforms:
+Listen to device removal events:
 
 ```dart
 FlutterAccessoryManager.onDeviceRemoved = (BluetoothDevice device) {
@@ -120,28 +109,21 @@ FlutterAccessoryManager.onDeviceRemoved = (BluetoothDevice device) {
 };
 ```
 
-> **Platform Behavior:**
-> - **Android/macOS/Windows/Linux:** Triggered when device is removed from range
-> - **iOS:** Triggered when External Accessory disconnects
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS.
 
 ### Get Paired Devices
 
-Get a list of all paired/connected devices. Works on all platforms:
+Get a list of all paired devices:
 
 ```dart
 List<BluetoothDevice> devices = await FlutterAccessoryManager.getPairedDevices();
 
 for (var device in devices) {
   print('Device: ${device.name} - ${device.address}');
-  if (device.isExternalAccessory == true) {
-    print('  iOS External Accessory');
-  }
 }
 ```
 
-> **Platform Behavior:**
-> - **Android/macOS/Windows/Linux:** Returns list of paired Bluetooth devices
-> - **iOS:** Returns list of connected External Accessories (converted to `BluetoothDevice`)
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS (throws `UnimplementedError`).
 
 ### Show Bluetooth Accessory Picker
 
@@ -159,13 +141,13 @@ await FlutterAccessoryManager.showBluetoothAccessoryPicker(
 );
 ```
 
-> **Note:** Not available on Linux. On iOS, `startScan()` automatically shows the picker, so you typically don't need to call this directly.
+> **Platform Support:** Available on Android, iOS, macOS, and Windows. Not available on Linux.
 
 ## Pairing & Unpairing
 
 ### Pair
 
-Pair with a Bluetooth device by its address. Works on all platforms:
+Pair with a Bluetooth device by its address:
 
 ```dart
 bool success = await FlutterAccessoryManager.pair('00:11:22:33:44:55');
@@ -177,34 +159,29 @@ if (success) {
 }
 ```
 
-> **Platform Behavior:**
-> - **Android/macOS/Windows/Linux:** Standard Bluetooth pairing
-> - **iOS:** If device is already connected via External Accessory, returns `true`. Otherwise, shows picker dialog and waits for user selection
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS (throws `UnimplementedError`).
 
 ### Unpair
 
-Unpair a Bluetooth device. Works on all platforms:
+Unpair a Bluetooth device:
 
 ```dart
 await FlutterAccessoryManager.unpair('00:11:22:33:44:55');
 ```
 
-> **iOS:** Disconnects the External Accessory if connected
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS (throws `UnimplementedError`).
 
 ## Connecting
 
 ### Connect
 
-Connect to a Bluetooth device. Works on all platforms:
+Connect to a Bluetooth device:
 
 ```dart
 await FlutterAccessoryManager.connect('00:11:22:33:44:55');
 ```
 
-> **Platform Behavior:**
-> - **Android/macOS/Windows:** Establishes HID connection
-> - **iOS:** Opens External Accessory session (if device not found, shows picker first)
-> - **Linux:** Establishes basic Bluetooth connection (if supported)
+> **Platform Support:** Available on Android, macOS, Windows (HID connection), and Linux (basic Bluetooth connection). Not available on iOS (throws `UnimplementedError`).
 
 ### Disconnect
 
@@ -216,12 +193,12 @@ await FlutterAccessoryManager.disconnect('00:11:22:33:44:55');
 
 > **Platform Behavior:**
 > - **Android/macOS/Windows:** Disconnects HID connection
-> - **iOS:** Closes External Accessory session
+> - **iOS:** Closes External Accessory session (calls `closeEASession()` internally)
 > - **Linux:** Disconnects basic Bluetooth connection
 
 ### Connection State Changes
 
-Listen to connection state changes. This unified callback works on all platforms:
+Listen to connection state changes:
 
 ```dart
 FlutterAccessoryManager.onConnectionStateChanged = (String deviceId, bool connected) {
@@ -229,10 +206,7 @@ FlutterAccessoryManager.onConnectionStateChanged = (String deviceId, bool connec
 };
 ```
 
-> **Platform Behavior:**
-> - **Android/macOS/Windows:** Triggered on HID connection state changes
-> - **iOS:** Triggered when External Accessory connects/disconnects
-> - **Linux:** Triggered on basic Bluetooth connection state changes
+> **Platform Support:** Available on Android, macOS, Windows, and Linux. Not available on iOS.
 
 ## HID Reports
 
@@ -327,15 +301,23 @@ FlutterAccessoryManager.onSdpServiceRegistrationUpdate = (bool registered) {
 
 ## iOS External Accessory
 
-> **ℹ️ Unified API:** iOS External Accessory functionality is now integrated into the unified API. The following deprecated APIs are still available for backward compatibility but will be removed in a future version.
+> **ℹ️ Unified API:** iOS External Accessory functionality is integrated into the unified API.
+
+### Unified APIs
+
+The following APIs work on iOS through the unified interface:
+
+- `disconnect()` - Calls `closeEASession()` internally on iOS
+- `showBluetoothAccessoryPicker()` - Shows the External Accessory picker dialog
 
 ### Deprecated APIs
 
-The following iOS-specific APIs are deprecated. Use the unified APIs instead:
+The following iOS-specific callbacks are deprecated. Use the unified callbacks instead:
 
-- `closeEASession()` → Use `disconnect()`
 - `accessoryConnected` callback → Use `onConnectionStateChanged`
 - `accessoryDisconnected` callback → Use `onDeviceRemoved` or `onConnectionStateChanged`
+
+> **Note:** `closeEASession()` is still available for direct use if needed, but `disconnect()` is the recommended unified API.
 
 ### Accessing iOS-Specific Information
 
@@ -553,10 +535,8 @@ While the API is unified, platform implementations differ:
 
 **iOS:**
 - Uses External Accessory framework (MFi required)
-- `startScan()` automatically shows picker dialog
-- `pair()` and `connect()` show picker if device not found
-- External Accessories converted to `BluetoothDevice` automatically
-- HID operations not supported
+- Only `showBluetoothAccessoryPicker` is supported
+- All other APIs throw `UnimplementedError`
 
 **Linux:**
 - Basic Bluetooth operations (scan, pair, disconnect)
@@ -566,7 +546,7 @@ While the API is unified, platform implementations differ:
 ### Example: Cross-Platform Code
 
 ```dart
-// Works on all platforms - no platform checks needed!
+// Works on Android/macOS/Windows/Linux - iOS only supports showBluetoothAccessoryPicker
 FlutterAccessoryManager.onDeviceDiscovered = (BluetoothDevice device) {
   print('Found: ${device.name}');
 };
@@ -575,22 +555,22 @@ FlutterAccessoryManager.onConnectionStateChanged = (String deviceId, bool connec
   print('$deviceId: ${connected ? "connected" : "disconnected"}');
 };
 
-// Scan - works everywhere
+// Scan - works on Android/macOS/Windows/Linux
 await FlutterAccessoryManager.startScan();
 
-// Get devices - works everywhere
+// Get devices - works on Android/macOS/Windows/Linux
 List<BluetoothDevice> devices = await FlutterAccessoryManager.getPairedDevices();
 
-// Pair - works everywhere
+// Pair - works on Android/macOS/Windows/Linux
 bool paired = await FlutterAccessoryManager.pair(device.address);
 
-// Connect - works everywhere
+// Connect - works on Android/macOS/Windows/Linux
 await FlutterAccessoryManager.connect(device.address);
 
 // Send data - available on Android/macOS/Windows only
 await FlutterAccessoryManager.sendReport(device.address, data);
 
-// Disconnect - works everywhere
+// Disconnect - works on all platforms (iOS calls closeEASession internally)
 await FlutterAccessoryManager.disconnect(device.address);
 ```
 
@@ -598,10 +578,11 @@ await FlutterAccessoryManager.disconnect(device.address);
 
 The following platform-specific APIs are deprecated and will be removed in a future version:
 
-- `closeEASession()` → Use `disconnect()`
 - `accessoryConnected` / `accessoryDisconnected` → Use `onConnectionStateChanged` or `onDeviceRemoved`
 - `onBluetoothDeviceDiscover` → Use `onDeviceDiscovered`
 - `onBluetoothDeviceRemoved` → Use `onDeviceRemoved`
+
+> **Note:** `closeEASession()` is still available on iOS for direct use, but `disconnect()` is the recommended unified API that works across all platforms.
 
 ## Customizing Platform Implementation
 
@@ -614,7 +595,6 @@ class FlutterAccessoryManagerMock extends FlutterAccessoryManagerInterface {
 // Set custom platform specific implementation (e.g. for testing)
 FlutterAccessoryManager.setInstance(FlutterAccessoryManagerMock());
 ```
-<<<<<<< HEAD
 
 ## 🧩 Apps using Flutter Accessory Manager
 
@@ -625,5 +605,3 @@ Here are some of the apps leveraging the power of `flutter_accessory_manager` in
 > 💡 **Built something cool with Flutter Accessory Manager?**  
 > We'd love to showcase your app here!  
 > Open a pull request and add it to this section. Please include your app icon in svg!
-=======
->>>>>>> 274eb2b (Update readme)
